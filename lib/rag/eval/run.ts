@@ -1,10 +1,13 @@
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { REQUIRED_POLICY_SECTIONS } from "@/lib/rag/sections";
-import type { RetryMode } from "@/lib/rag/retry";
+import { sleep, type RetryMode } from "@/lib/rag/retry";
 import { judgeClause, judgeCoverage } from "./judge";
 
 const JUDGE_MODEL_LABEL = "anthropic/claude-sonnet-4.6";
+// See app/(app)/policies/actions.ts for why judge calls are spaced out
+// sequentially rather than fired concurrently.
+const INTER_CALL_DELAY_MS = 5000;
 
 export type EvalSummary = {
   evalRunId: string;
@@ -40,51 +43,51 @@ export async function runEvalForPolicy(policyDocumentId: string, retryMode?: Ret
 
   const findings: Finding[] = [];
 
-  // Each clause's grounding check is independent of the others, so judge
-  // them concurrently rather than paying for the retry backoff of each
-  // clause's LLM call sequentially.
-  const perClauseFindings = await Promise.all(
-    clauses.map(async (clause): Promise<Finding | null> => {
-      if (clause.isRefusal) return null;
+  let judgeCallCount = 0;
+  for (const clause of clauses) {
+    if (clause.isRefusal) continue;
 
-      if (!clause.citedChunkId) {
-        return {
-          clauseId: clause.id,
-          category: "citation_mismatch",
-          severity: "high",
-          detail: `Clause for §${clause.section} has no cited source chunk but was not marked as a refusal.`,
-        };
-      }
+    if (!clause.citedChunkId) {
+      findings.push({
+        clauseId: clause.id,
+        category: "citation_mismatch",
+        severity: "high",
+        detail: `Clause for §${clause.section} has no cited source chunk but was not marked as a refusal.`,
+      });
+      continue;
+    }
 
-      const [chunk] = await db
-        .select({ content: schema.corpusChunks.content })
-        .from(schema.corpusChunks)
-        .where(eq(schema.corpusChunks.id, clause.citedChunkId))
-        .limit(1);
+    const [chunk] = await db
+      .select({ content: schema.corpusChunks.content })
+      .from(schema.corpusChunks)
+      .where(eq(schema.corpusChunks.id, clause.citedChunkId))
+      .limit(1);
 
-      if (!chunk) {
-        return {
-          clauseId: clause.id,
-          category: "citation_mismatch",
-          severity: "high",
-          detail: `Clause for §${clause.section} cites a chunk id that no longer exists in the corpus.`,
-        };
-      }
+    if (!chunk) {
+      findings.push({
+        clauseId: clause.id,
+        category: "citation_mismatch",
+        severity: "high",
+        detail: `Clause for §${clause.section} cites a chunk id that no longer exists in the corpus.`,
+      });
+      continue;
+    }
 
-      const verdict = await judgeClause(clause.clauseText, chunk.content, retryMode);
-      if (verdict.verdict !== "grounded") {
-        return {
-          clauseId: clause.id,
-          category: "ungrounded_claim",
-          severity: verdict.verdict === "ungrounded" ? "high" : "medium",
-          detail: verdict.explanation,
-        };
-      }
-      return null;
-    })
-  );
+    if (judgeCallCount > 0) {
+      await sleep(INTER_CALL_DELAY_MS);
+    }
+    judgeCallCount++;
 
-  findings.push(...perClauseFindings.filter((f): f is Finding => f !== null));
+    const verdict = await judgeClause(clause.clauseText, chunk.content, retryMode);
+    if (verdict.verdict !== "grounded") {
+      findings.push({
+        clauseId: clause.id,
+        category: "ungrounded_claim",
+        severity: verdict.verdict === "ungrounded" ? "high" : "medium",
+        detail: verdict.explanation,
+      });
+    }
+  }
 
   const coverage = judgeCoverage(REQUIRED_POLICY_SECTIONS, clauses);
   for (const missingSection of coverage.missingSections) {

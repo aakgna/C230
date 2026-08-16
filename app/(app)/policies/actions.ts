@@ -5,12 +5,16 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
 import { policyIntakeSchema } from "@/lib/validation/schemas";
-import { generatePolicyClause } from "@/lib/rag/generate-policy";
+import { generatePolicyClause, type GeneratedClause } from "@/lib/rag/generate-policy";
 import { REQUIRED_POLICY_SECTIONS } from "@/lib/rag/sections";
 import { runEvalForPolicy } from "@/lib/rag/eval/run";
+import { sleep } from "@/lib/rag/retry";
 import { z } from "zod";
 
 const POLICY_SLUG = "ai-use-policy";
+// Spacing calls out avoids tripping the Gateway's per-window rate limit that
+// firing them concurrently (or back-to-back) hits immediately.
+const INTER_CALL_DELAY_MS = 5000;
 
 export async function createPolicyDocument(formData: FormData) {
   const ctx = await requireFirmContext();
@@ -45,12 +49,13 @@ export async function createPolicyDocument(formData: FormData) {
     })
     .returning();
 
-  // Sections are independent of each other, so generate all clauses
-  // concurrently instead of paying for their latency (and rate-limit
-  // backoff) sequentially — this is the dominant cost of the action.
-  const generatedClauses = await Promise.all(
-    REQUIRED_POLICY_SECTIONS.map((section) => generatePolicyClause(section, intake))
-  );
+  const generatedClauses: GeneratedClause[] = [];
+  for (const section of REQUIRED_POLICY_SECTIONS) {
+    if (generatedClauses.length > 0) {
+      await sleep(INTER_CALL_DELAY_MS);
+    }
+    generatedClauses.push(await generatePolicyClause(section, intake));
+  }
 
   await db.insert(schema.policyDocumentClauses).values(
     generatedClauses.map((generated, clauseOrder) => ({
