@@ -5,13 +5,15 @@ import type { PolicyIntake } from "@/lib/validation/schemas";
 
 // Plain "provider/model" strings route through the Vercel AI Gateway
 // automatically (OIDC-authenticated, same as embeddings — see lib/rag/embed.ts).
-// A free-tier-accessible model, not a flagship one: as of this scaffold, AI
-// Gateway's free tier didn't grant access to OpenAI/Anthropic/Google chat
-// models at all (403), and even on models it did allow, generateObject's
-// structured-output mode was separately gated from plain generateText — see
+// A genuinely free-tier model (not just cheap): alibaba/qwen3.7-flash is
+// billed per-token and still hit "Free tier requests on this model are
+// rate-limited" 429s even after adding Gateway credits — those credits
+// unlocked embeddings but not this model's billing category. laguna-s-2.1-free
+// has no such gate. generateObject's structured-output mode was also
+// separately gated from plain generateText on the free tier — see
 // lib/rag/structured-generate.ts for the JSON-via-prompt workaround this
-// forced. Revisit once the project has real Gateway billing.
-const GENERATION_MODEL_ID = "alibaba/qwen3.7-flash";
+// forced. Revisit the model choice once Gateway billing covers chat models.
+const GENERATION_MODEL_ID = "poolside/laguna-s-2.1-free";
 
 const clauseGenerationSchema = z
   .object({

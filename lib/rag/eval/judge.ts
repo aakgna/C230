@@ -3,8 +3,8 @@ import { clauseJudgeSchema, JUDGE_SYSTEM_PROMPT, type ClauseJudgeResult } from "
 import type { RequiredPolicySection } from "@/lib/rag/sections";
 import type { RetryMode } from "@/lib/rag/retry";
 
-// See lib/rag/generate-policy.ts for why this isn't a flagship model.
-const JUDGE_MODEL_ID = "alibaba/qwen3.7-flash";
+// See lib/rag/generate-policy.ts for why this is a free-tier model.
+const JUDGE_MODEL_ID = "poolside/laguna-s-2.1-free";
 
 /**
  * Grounding check for one clause. The judge sees only the clause and its
