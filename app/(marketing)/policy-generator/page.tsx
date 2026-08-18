@@ -1,5 +1,12 @@
 import { PolicyPreviewForm } from "./PolicyPreviewForm";
 
+// previewPolicyClauses (./actions.ts) makes 5 sequential LLM calls spaced by
+// INTER_CALL_DELAY_MS=5000 to avoid the Gateway's rate limit — see
+// app/(app)/policies/new/page.tsx for the same pattern at larger scale. That
+// alone is ~20s of sleep before any generation time, past the platform
+// default timeout.
+export const maxDuration = 120;
+
 export default function PolicyGeneratorPreviewPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8 px-6 py-16">
