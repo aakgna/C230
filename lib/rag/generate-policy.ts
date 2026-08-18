@@ -68,12 +68,27 @@ export async function generatePolicyClause(section: string, intake: Pick<PolicyI
 
   const contextBlock = chunks.map((c, i) => `[chunk ${i}] (source: ${c.sourceTitle})\n${c.content}`).join("\n\n");
 
-  const object = await generateJsonObject({
-    model: GENERATION_MODEL_ID,
-    schema: clauseGenerationSchema,
-    system: SYSTEM_PROMPT,
-    prompt: `Circular 230 section: §${section}\nFirm practice mix: ${intake.practiceMix.join(", ")}\nClient data sensitivity: ${intake.clientDataSensitivity}\n\nSource context:\n${contextBlock}`,
-  });
+  let object: z.infer<typeof clauseGenerationSchema>;
+  try {
+    object = await generateJsonObject({
+      model: GENERATION_MODEL_ID,
+      schema: clauseGenerationSchema,
+      system: SYSTEM_PROMPT,
+      prompt: `Circular 230 section: §${section}\nFirm practice mix: ${intake.practiceMix.join(", ")}\nClient data sensitivity: ${intake.clientDataSensitivity}\n\nSource context:\n${contextBlock}`,
+    });
+  } catch {
+    // A single section's generation call failing (exhausted retries against a
+    // flaky/rate-limited provider) shouldn't take down the whole multi-section
+    // batch — surface it the same way a grounding failure is surfaced, as an
+    // explicit refusal, so the caller gets partial results instead of a crash.
+    return {
+      section,
+      clauseText: null,
+      citedChunkId: null,
+      isRefusal: true,
+      refusalReason: "Clause generation is temporarily unavailable for this section. Please try again shortly.",
+    };
+  }
 
   if (object.isRefusal || object.clauseText === null) {
     return {

@@ -4,20 +4,32 @@ export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function hasStatusCode429(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "statusCode" in error && (error as { statusCode: unknown }).statusCode === 429;
+// 429 (rate limit) plus the 5xx statuses that mean "the provider/gateway had
+// a transient hiccup, not that anything is wrong with the request" — free
+// tier models have been observed returning 503 "Service temporarily
+// unavailable" independent of rate limiting.
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+function hasRetryableStatusCode(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "statusCode" in error &&
+    RETRYABLE_STATUS_CODES.has((error as { statusCode: unknown }).statusCode as number)
+  );
 }
 
-function isRateLimitError(error: unknown): boolean {
-  if (hasStatusCode429(error)) {
+function isRetryableGatewayError(error: unknown): boolean {
+  if (hasRetryableStatusCode(error)) {
     return true;
   }
   // The AI SDK's own internal retries (a handful of fast attempts) get
-  // exhausted and rethrown wrapped in a RetryError — the 429 is on
-  // .lastError (a GatewayRateLimitError, not an APICallError — both expose
-  // statusCode directly, so we check that rather than a specific class).
+  // exhausted and rethrown wrapped in a RetryError — the status code is on
+  // .lastError (a GatewayRateLimitError/GatewayInternalServerError, not an
+  // APICallError — both expose statusCode directly, so we check that rather
+  // than a specific class).
   if (RetryError.isInstance(error)) {
-    return isRateLimitError(error.lastError);
+    return isRetryableGatewayError(error.lastError);
   }
   return false;
 }
@@ -38,11 +50,13 @@ const RETRY_PROFILES: Record<RetryMode, { attempts: number; baseDelayMs: number 
 };
 
 /**
- * The AI Gateway free/low tier rate-limits fairly aggressively, tighter than
- * the AI SDK's own built-in retry (a few fast attempts) can ride out. This
- * backs off much harder specifically for 429s. Pass "patient" from bursty
- * background contexts (seed scripts, standalone eval runs); interactive
- * request-path callers should keep the "fast" default.
+ * The AI Gateway free/low tier rate-limits fairly aggressively, and free-tier
+ * models have also been observed returning transient 5xx errors — both
+ * tighter/flakier than the AI SDK's own built-in retry (a few fast attempts)
+ * can ride out. This backs off much harder specifically for those cases.
+ * Pass "patient" from bursty background contexts (seed scripts, standalone
+ * eval runs); interactive request-path callers should keep the "fast"
+ * default.
  */
 export async function withRateLimitRetry<T>(fn: () => Promise<T>, mode: RetryMode = "fast"): Promise<T> {
   const { attempts, baseDelayMs } = RETRY_PROFILES[mode];
@@ -50,11 +64,11 @@ export async function withRateLimitRetry<T>(fn: () => Promise<T>, mode: RetryMod
     try {
       return await fn();
     } catch (error) {
-      if (!isRateLimitError(error) || attempt === attempts - 1) {
+      if (!isRetryableGatewayError(error) || attempt === attempts - 1) {
         throw error;
       }
       const delayMs = baseDelayMs * (attempt + 1);
-      console.warn(`Rate-limited, retrying in ${delayMs}ms (attempt ${attempt + 1}/${attempts})`);
+      console.warn(`Retryable gateway error, retrying in ${delayMs}ms (attempt ${attempt + 1}/${attempts})`);
       await sleep(delayMs);
     }
   }
