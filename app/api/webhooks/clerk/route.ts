@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { computeGenesisHash } from "@/lib/verification/hash-chain";
 
@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
           clerkOrgId: org.id,
           name: org.name,
           chainGenesisHash,
+          // Resolved to a real users.id once organizationMembership.created lands for this
+          // Clerk user — the creator's users row doesn't exist yet at this point.
+          pendingOwnerClerkUserId: org.created_by ?? null,
         })
         .onConflictDoNothing({ target: schema.firms.clerkOrgId })
         .returning();
@@ -78,6 +81,33 @@ export async function POST(request: NextRequest) {
           appRole: membership.role === "org:admin" ? "firm_admin" : "practitioner",
         })
         .onConflictDoNothing({ target: schema.users.clerkUserId });
+
+      // Resolve firm ownership now that this user's row is guaranteed to exist (either just
+      // inserted, or already there on a webhook redelivery).
+      if (!firm.ownerId) {
+        const [user] = await db.select().from(schema.users).where(eq(schema.users.clerkUserId, clerkUserId)).limit(1);
+
+        if (user) {
+          if (firm.pendingOwnerClerkUserId === clerkUserId) {
+            await db
+              .update(schema.firms)
+              .set({ ownerId: user.id, pendingOwnerClerkUserId: null })
+              .where(eq(schema.firms.id, firm.id));
+          } else if (!firm.pendingOwnerClerkUserId) {
+            // organization.created didn't give us a created_by — fall back to "the firm's
+            // first-ever recorded member is its owner" (Clerk always adds the creator as
+            // org:admin immediately on creation, so the first membership can only be them).
+            const [{ count }] = await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(schema.users)
+              .where(eq(schema.users.firmId, firm.id));
+
+            if (count === 1) {
+              await db.update(schema.firms).set({ ownerId: user.id }).where(eq(schema.firms.id, firm.id));
+            }
+          }
+        }
+      }
       break;
     }
 

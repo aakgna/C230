@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
 import { verifyChain } from "@/lib/verification/hash-chain";
@@ -13,6 +14,7 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
   const { id } = await props.params;
   const ctx = await requireFirmContext();
   const db = getDb();
+  const approvers = alias(schema.users, "approvers");
 
   const [entry] = await db
     .select({
@@ -21,20 +23,26 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
       priorHash: schema.verificationLog.priorHash,
       entryHash: schema.verificationLog.entryHash,
       taskCategory: schema.verificationLog.taskCategory,
+      clientReference: schema.verificationLog.clientReference,
       outcome: schema.verificationLog.outcome,
       flagReason: schema.verificationLog.flagReason,
       checklistItemsReviewed: schema.verificationLog.checklistItemsReviewed,
+      assumptionsNoted: schema.verificationLog.assumptionsNoted,
+      evidenceLocation: schema.verificationLog.evidenceLocation,
       aiOutputGeneratedAt: schema.verificationLog.aiOutputGeneratedAt,
       reviewCompletedAt: schema.verificationLog.reviewCompletedAt,
       deliveredToClientAt: schema.verificationLog.deliveredToClientAt,
       reviewerRole: schema.verificationLog.reviewerRole,
       amendsEntryId: schema.verificationLog.amendsEntryId,
+      approvedAt: schema.verificationLog.approvedAt,
       toolName: schema.aiToolRegister.toolName,
       practitionerName: schema.users.fullName,
+      approvedByName: approvers.fullName,
     })
     .from(schema.verificationLog)
     .innerJoin(schema.aiToolRegister, eq(schema.verificationLog.aiToolId, schema.aiToolRegister.id))
     .innerJoin(schema.users, eq(schema.verificationLog.practitionerId, schema.users.id))
+    .leftJoin(approvers, eq(schema.verificationLog.approvedBy, approvers.id))
     .where(and(eq(schema.verificationLog.id, id), eq(schema.verificationLog.firmId, ctx.firmId)))
     .limit(1);
 
@@ -60,15 +68,33 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <Row label="Practitioner" value={entry.practitionerName ?? "—"} />
+          {entry.clientReference && <Row label="Client / engagement" value={entry.clientReference} />}
           <Row label="AI tool" value={entry.toolName} />
           <Row label="Task category" value={entry.taskCategory.replace(/_/g, " ")} />
           <Row label="Reviewer role" value={entry.reviewerRole.replace("_", " ")} />
           <Row label="Outcome" value={<Badge>{entry.outcome}</Badge>} />
           {entry.flagReason && <Row label="Flag reason" value={entry.flagReason} />}
+          {entry.assumptionsNoted && <Row label="Assumptions noted" value={entry.assumptionsNoted} />}
+          {entry.evidenceLocation && (
+            <Row
+              label="Evidence location"
+              value={
+                /^https?:\/\//.test(entry.evidenceLocation) ? (
+                  <a href={entry.evidenceLocation} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+                    {entry.evidenceLocation}
+                  </a>
+                ) : (
+                  entry.evidenceLocation
+                )
+              }
+            />
+          )}
           <Row label="AI output generated" value={entry.aiOutputGeneratedAt.toLocaleString()} />
           <Row label="Review completed" value={entry.reviewCompletedAt.toLocaleString()} />
           {entry.deliveredToClientAt && <Row label="Delivered to client" value={entry.deliveredToClientAt.toLocaleString()} />}
           {entry.amendsEntryId && <Row label="Amends entry" value={entry.amendsEntryId} />}
+          {entry.approvedByName && <Row label="Approved by" value={entry.approvedByName} />}
+          {entry.approvedAt && <Row label="Approved" value={entry.approvedAt.toLocaleString()} />}
         </CardContent>
       </Card>
 

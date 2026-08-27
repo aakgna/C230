@@ -16,7 +16,7 @@ const POLICY_SLUG = "ai-use-policy";
 // firing them concurrently (or back-to-back) hits immediately.
 const INTER_CALL_DELAY_MS = 5000;
 
-export async function createPolicyDocument(formData: FormData) {
+export async function createPolicyDocument(_prevState: unknown, formData: FormData) {
   const ctx = await requireFirmContext();
 
   const intake = policyIntakeSchema.parse({
@@ -118,4 +118,33 @@ export async function publishPolicyDocument(formData: FormData) {
     .where(eq(schema.policyDocuments.id, doc.id));
 
   redirect(`/policies/${doc.id}`);
+}
+
+const acknowledgeSchema = z.object({ policyDocumentId: z.uuid() });
+
+// Callable by any firm member, not just admins — acknowledging is something every staff member
+// does for themselves. onConflictDoNothing makes a double-submit (e.g. a slow double-click) a
+// no-op rather than an error, since the unique(policyDocumentId, userId) constraint would
+// otherwise reject the second insert.
+export async function acknowledgePolicy(formData: FormData) {
+  const ctx = await requireFirmContext();
+  const { policyDocumentId } = acknowledgeSchema.parse({ policyDocumentId: formData.get("policyDocumentId") });
+
+  const db = getDb();
+
+  const [doc] = await db
+    .select({ id: schema.policyDocuments.id })
+    .from(schema.policyDocuments)
+    .where(and(eq(schema.policyDocuments.id, policyDocumentId), eq(schema.policyDocuments.firmId, ctx.firmId)))
+    .limit(1);
+  if (!doc) {
+    throw new Error("Policy document not found for this firm");
+  }
+
+  await db
+    .insert(schema.policyAcknowledgments)
+    .values({ firmId: ctx.firmId, policyDocumentId, userId: ctx.userId })
+    .onConflictDoNothing({ target: [schema.policyAcknowledgments.policyDocumentId, schema.policyAcknowledgments.userId] });
+
+  redirect(`/policies/${policyDocumentId}`);
 }

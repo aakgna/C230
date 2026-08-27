@@ -15,6 +15,48 @@
       "when": 1786564860853,
       "tag": "0001_verification_log_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787515434061,
+      "tag": "0002_new_bulldozer",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787517219295,
+      "tag": "0003_stiff_captain_midlands",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787519202241,
+      "tag": "0004_loving_alex_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787535982196,
+      "tag": "0005_conscious_moon_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787776626034,
+      "tag": "0006_uneven_blazing_skull",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787777050711,
+      "tag": "0007_orange_nova",
+      "breakpoints": true
     }
   ]
 }

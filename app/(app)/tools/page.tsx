@@ -36,62 +36,79 @@ export default async function ToolsPage() {
         </p>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Tool</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Vetting notes</TableHead>
-            <TableHead />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tools.map((tool) => (
-            <TableRow key={tool.id}>
-              <TableCell className="font-medium">{tool.toolName}</TableCell>
-              <TableCell>
-                <Badge variant={STATUS_VARIANT[tool.status] ?? "secondary"}>{tool.status.replace("_", " ")}</Badge>
-              </TableCell>
-              <TableCell className="max-w-sm truncate text-muted-foreground">{tool.vettingNotes ?? "—"}</TableCell>
-              <TableCell className="text-right">
-                <Link href={`/tools/${tool.id}`} className="text-sm underline underline-offset-4">
-                  Edit
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
-          {tools.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center text-muted-foreground">
-                No tools yet.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tool</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Domains</TableHead>
+                <TableHead>Vetting notes</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tools.map((tool) => (
+                <TableRow key={tool.id}>
+                  <TableCell className="font-medium">{tool.toolName}</TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_VARIANT[tool.status] ?? "secondary"}>{tool.status.replace("_", " ")}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {tool.domains && tool.domains.length > 0 ? tool.domains.join(", ") : "—"}
+                  </TableCell>
+                  <TableCell className="max-w-sm truncate text-muted-foreground">{tool.vettingNotes ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    <Link href={`/tools/${tool.id}`} className="text-sm underline underline-offset-4">
+                      Edit
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {tools.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    No tools yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-      <Card className="max-w-lg">
-        <CardHeader>
-          <CardTitle className="text-base">Add a custom tool</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={addCustomTool} className="space-y-3">
-            <div className="space-y-1.5">
-              <label htmlFor="toolName" className="text-sm font-medium">
-                Tool name
-              </label>
-              <Input id="toolName" name="toolName" required maxLength={200} />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="vettingNotes" className="text-sm font-medium">
-                Vetting notes (optional)
-              </label>
-              <Textarea id="vettingNotes" name="vettingNotes" rows={3} />
-            </div>
-            <Button type="submit">Add tool</Button>
-          </form>
-        </CardContent>
-      </Card>
+        <Card className="h-fit lg:sticky lg:top-8">
+          <CardHeader>
+            <CardTitle className="text-base">Add a custom tool</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form action={addCustomTool} className="space-y-3">
+              <div className="space-y-1.5">
+                <label htmlFor="toolName" className="text-sm font-medium">
+                  Tool name
+                </label>
+                <Input id="toolName" name="toolName" required maxLength={200} />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="domains" className="text-sm font-medium">
+                  Domains (optional)
+                </label>
+                <Input id="domains" name="domains" placeholder="chatgpt.com, chat.openai.com" />
+                <p className="text-xs text-muted-foreground">
+                  Comma-separated. Lets the browser extension auto-select this tool when you leave one of these sites.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="vettingNotes" className="text-sm font-medium">
+                  Vetting notes (optional)
+                </label>
+                <Textarea id="vettingNotes" name="vettingNotes" rows={3} />
+              </div>
+              <Button type="submit">Add tool</Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

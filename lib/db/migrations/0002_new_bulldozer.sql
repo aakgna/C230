@@ -1,0 +1,1 @@
+ALTER TABLE "ai_tool_register" ADD COLUMN "domains" text[];

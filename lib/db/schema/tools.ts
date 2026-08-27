@@ -21,6 +21,9 @@ export const aiToolRegister = pgTable("ai_tool_register", {
   toolName: text("tool_name").notNull(),
   status: toolStatusEnum("status").notNull().default("under_review"),
   vettingNotes: text("vetting_notes"),
+  // Bare hostnames (e.g. "chatgpt.com"), lowercased, no protocol/www — lets the browser
+  // extension's detected domain auto-select a tool on the verification form.
+  domains: text("domains").array(),
   updatedBy: uuid("updated_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

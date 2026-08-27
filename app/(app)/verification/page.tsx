@@ -49,12 +49,15 @@ export default async function VerificationLogPage() {
         <div>
           <h1 className="text-2xl font-semibold">Verification Log</h1>
           <p className="text-sm text-muted-foreground">
-            Append-only, hash-chained record of every reviewed AI-assisted work product.
+            Append-only, hash-chained record of every independently-approved AI-assisted review.
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" render={<Link href="/verification/export" />}>
             Export audit report
+          </Button>
+          <Button variant="outline" render={<Link href="/verification/pending" />}>
+            Pending review
           </Button>
           <Button render={<Link href="/verification/new" />}>Log a review</Button>
         </div>

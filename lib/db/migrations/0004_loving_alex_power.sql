@@ -1,0 +1,1 @@
+ALTER TABLE "verification_log" ADD COLUMN "evidence_location" text;

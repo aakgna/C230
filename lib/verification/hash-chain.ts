@@ -25,7 +25,12 @@ export type NewVerificationEntryInput = {
   practitionerId: string;
   aiToolId: string;
   taskCategory: TaskCategory;
+  // Not part of canonicalize()/entryHash — see note above appendVerificationEntry. Still
+  // append-only/immutable via the DB trigger, just not covered by the SHA-256 recompute check.
+  clientReference?: string | null;
   checklistItemsReviewed: ChecklistItemsReviewed;
+  assumptionsNoted?: string | null;
+  evidenceLocation?: string | null;
   outcome: VerificationOutcome;
   flagReason?: string | null;
   aiOutputGeneratedAt: Date;
@@ -34,6 +39,11 @@ export type NewVerificationEntryInput = {
   reviewerRole: ReviewerRole;
   amendsEntryId?: string | null;
   createdBy: string;
+  // Who independently approved this entry, and when — also NOT part of canonicalize(), same
+  // reasoning as clientReference/assumptionsNoted/evidenceLocation above.
+  approvedBy?: string | null;
+  approvedAt?: Date | null;
+  submissionId?: string | null;
 };
 
 /**
@@ -93,6 +103,12 @@ export class ChainStateMissingError extends Error {
  * transaction: lock the firm's chain-state row, read the tail, insert, and
  * advance the tail — all atomically, so concurrent appenders for the same
  * firm can never observe or write the same sequence_no/prior_hash.
+ *
+ * clientReference/assumptionsNoted are deliberately NOT passed into canonicalize(): adding
+ * fields to that function changes what entryHash means, which would make every entry written
+ * before the change look tampered-with when verifyChain() recomputes their hash. They're still
+ * fully immutable (the append-only trigger from migration 0001 covers every column), just not
+ * part of the SHA-256 recompute check the original fields are.
  */
 export async function appendVerificationEntry(input: NewVerificationEntryInput) {
   const db = getPoolDb();
@@ -138,7 +154,10 @@ export async function appendVerificationEntry(input: NewVerificationEntryInput) 
         practitionerId: input.practitionerId,
         aiToolId: input.aiToolId,
         taskCategory: input.taskCategory,
+        clientReference: input.clientReference ?? null,
         checklistItemsReviewed: input.checklistItemsReviewed,
+        assumptionsNoted: input.assumptionsNoted ?? null,
+        evidenceLocation: input.evidenceLocation ?? null,
         outcome: input.outcome,
         flagReason,
         aiOutputGeneratedAt: input.aiOutputGeneratedAt,
@@ -150,6 +169,9 @@ export async function appendVerificationEntry(input: NewVerificationEntryInput) 
         priorHash,
         entryHash,
         createdBy: input.createdBy,
+        approvedBy: input.approvedBy ?? null,
+        approvedAt: input.approvedAt ?? null,
+        submissionId: input.submissionId ?? null,
       })
       .returning();
 

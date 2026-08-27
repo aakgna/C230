@@ -4,6 +4,7 @@ import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toolStatusValues } from "@/lib/validation/schemas";
@@ -53,6 +54,20 @@ export default async function ToolDetailPage(props: PageProps<"/tools/[toolId]">
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="domains" className="text-sm font-medium">
+                Domains
+              </label>
+              <Input
+                id="domains"
+                name="domains"
+                defaultValue={tool.domains?.join(", ") ?? ""}
+                placeholder="chatgpt.com, chat.openai.com"
+              />
+              <p className="text-xs text-muted-foreground">
+                Comma-separated. Lets the browser extension auto-select this tool when you leave one of these sites.
+              </p>
             </div>
             <div className="space-y-1.5">
               <label htmlFor="vettingNotes" className="text-sm font-medium">

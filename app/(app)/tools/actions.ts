@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
-import { updateToolStatusSchema, addCustomToolSchema } from "@/lib/validation/schemas";
+import { updateToolStatusSchema, addCustomToolSchema, parseDomainsInput } from "@/lib/validation/schemas";
 
 export async function updateToolStatus(formData: FormData) {
   const ctx = await requireFirmContext();
@@ -12,6 +13,7 @@ export async function updateToolStatus(formData: FormData) {
     toolId: formData.get("toolId"),
     status: formData.get("status"),
     vettingNotes: formData.get("vettingNotes") || undefined,
+    domains: formData.get("domains") || undefined,
   });
 
   const db = getDb();
@@ -22,6 +24,7 @@ export async function updateToolStatus(formData: FormData) {
     .set({
       status: parsed.status,
       vettingNotes: parsed.vettingNotes ?? null,
+      domains: parseDomainsInput(parsed.domains),
       updatedBy: ctx.userId,
       updatedAt: new Date(),
     })
@@ -34,6 +37,7 @@ export async function updateToolStatus(formData: FormData) {
 
   revalidatePath("/tools");
   revalidatePath(`/tools/${parsed.toolId}`);
+  redirect("/tools");
 }
 
 export async function addCustomTool(formData: FormData) {
@@ -41,6 +45,7 @@ export async function addCustomTool(formData: FormData) {
   const parsed = addCustomToolSchema.parse({
     toolName: formData.get("toolName"),
     vettingNotes: formData.get("vettingNotes") || undefined,
+    domains: formData.get("domains") || undefined,
   });
 
   const db = getDb();
@@ -48,6 +53,7 @@ export async function addCustomTool(formData: FormData) {
     firmId: ctx.firmId,
     toolName: parsed.toolName,
     vettingNotes: parsed.vettingNotes ?? null,
+    domains: parseDomainsInput(parsed.domains),
     status: "under_review",
     updatedBy: ctx.userId,
   });

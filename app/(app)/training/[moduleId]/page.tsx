@@ -5,6 +5,9 @@ import { requireFirmContext } from "@/lib/auth/firm-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DocContent } from "@/components/training/DocContent";
+import { TrainingQuiz } from "@/components/training/TrainingQuiz";
+import { parseQuizContent } from "@/lib/training/quiz";
 import { recordTrainingCompletion } from "../actions";
 
 export default async function TrainingModulePage(props: PageProps<"/training/[moduleId]">) {
@@ -46,16 +49,20 @@ export default async function TrainingModulePage(props: PageProps<"/training/[mo
             <p className="text-sm text-muted-foreground">
               Placeholder video: <a href={module.contentBody} className="underline">{module.contentBody}</a>
             </p>
+          ) : module.contentType === "interactive" ? (
+            <TrainingQuiz quiz={parseQuizContent(module.contentBody)} moduleId={module.id} />
           ) : (
-            <pre className="whitespace-pre-wrap font-sans text-sm">{module.contentBody}</pre>
+            <DocContent body={module.contentBody} />
           )}
         </CardContent>
       </Card>
 
-      <form action={recordTrainingCompletion}>
-        <input type="hidden" name="moduleId" value={module.id} />
-        <Button type="submit">{completion ? "Mark complete again" : "Mark complete"}</Button>
-      </form>
+      {module.contentType !== "interactive" && (
+        <form action={recordTrainingCompletion}>
+          <input type="hidden" name="moduleId" value={module.id} />
+          <Button type="submit">{completion ? "Mark complete again" : "Mark complete"}</Button>
+        </form>
+      )}
     </div>
   );
 }

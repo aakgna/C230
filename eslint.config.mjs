@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // extension/ is a standalone Manifest V3 Chrome extension (chrome.* globals, no React/Next
+    // conventions) — lint it separately if needed rather than under Next's ruleset.
+    "extension/**",
   ]),
 ]);
 

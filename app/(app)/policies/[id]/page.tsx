@@ -5,8 +5,9 @@ import { requireFirmContext } from "@/lib/auth/firm-context";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangleIcon } from "lucide-react";
-import { publishPolicyDocument } from "../actions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertTriangleIcon, CheckIcon } from "lucide-react";
+import { publishPolicyDocument, acknowledgePolicy } from "../actions";
 
 export default async function PolicyDetailPage(props: PageProps<"/policies/[id]">) {
   const { id } = await props.params;
@@ -64,6 +65,32 @@ export default async function PolicyDetailPage(props: PageProps<"/policies/[id]"
     }
   }
 
+  const myAcknowledgment = doc.status === "published"
+    ? await db
+        .select({ acknowledgedAt: schema.policyAcknowledgments.acknowledgedAt })
+        .from(schema.policyAcknowledgments)
+        .where(
+          and(
+            eq(schema.policyAcknowledgments.policyDocumentId, doc.id),
+            eq(schema.policyAcknowledgments.userId, ctx.userId)
+          )
+        )
+        .limit(1)
+        .then((rows) => rows[0])
+    : undefined;
+
+  let ackMatrix: { users: (typeof schema.users.$inferSelect)[]; acknowledgedIds: Set<string> } | null = null;
+  if (ctx.appRole === "firm_admin" && doc.status === "published") {
+    const [firmUsers, acks] = await Promise.all([
+      db.select().from(schema.users).where(eq(schema.users.firmId, ctx.firmId)),
+      db
+        .select({ userId: schema.policyAcknowledgments.userId })
+        .from(schema.policyAcknowledgments)
+        .where(eq(schema.policyAcknowledgments.policyDocumentId, doc.id)),
+    ]);
+    ackMatrix = { users: firmUsers, acknowledgedIds: new Set(acks.map((a) => a.userId)) };
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
@@ -88,6 +115,19 @@ export default async function PolicyDetailPage(props: PageProps<"/policies/[id]"
               </Button>
             </form>
           )}
+          {doc.status === "published" &&
+            (myAcknowledgment ? (
+              <Badge variant="outline" className="gap-1">
+                <CheckIcon className="size-3" /> Acknowledged
+              </Badge>
+            ) : (
+              <form action={acknowledgePolicy}>
+                <input type="hidden" name="policyDocumentId" value={doc.id} />
+                <Button type="submit" size="sm">
+                  Acknowledge
+                </Button>
+              </form>
+            ))}
           <Button variant="outline" size="sm" render={<a href={`/policies/${doc.id}/pdf`} />}>
             PDF
           </Button>
@@ -143,6 +183,34 @@ export default async function PolicyDetailPage(props: PageProps<"/policies/[id]"
           );
         })}
       </div>
+
+      {ackMatrix && (
+        <div className="space-y-2">
+          <h2 className="text-lg font-medium">Firm-wide acknowledgment</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Staff</TableHead>
+                <TableHead className="text-center">Acknowledged</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {ackMatrix.users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.fullName ?? user.email}</TableCell>
+                  <TableCell className="text-center">
+                    {ackMatrix!.acknowledgedIds.has(user.id) ? (
+                      <CheckIcon className="mx-auto size-4 text-primary" />
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

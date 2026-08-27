@@ -39,6 +39,7 @@ const styles = StyleSheet.create({
   cellSeq: { width: 30 },
   cellCategory: { width: 100 },
   cellOutcome: { width: 70 },
+  cellClient: { width: 100 },
   cellHash: { flex: 1, fontSize: 7 },
   footer: { marginTop: 24, fontSize: 8, color: "#666" },
 });
@@ -50,7 +51,13 @@ function AuditReportDocument({
 }: {
   summary: AuditSummary;
   signature: string;
-  entries: Array<{ sequenceNo: number; taskCategory: string; outcome: string; entryHash: string }>;
+  entries: Array<{
+    sequenceNo: number;
+    taskCategory: string;
+    outcome: string;
+    clientReference: string | null;
+    entryHash: string;
+  }>;
 }) {
   return (
     <Document>
@@ -65,6 +72,7 @@ function AuditReportDocument({
           <Text style={styles.cellSeq}>#</Text>
           <Text style={styles.cellCategory}>Task category</Text>
           <Text style={styles.cellOutcome}>Outcome</Text>
+          <Text style={styles.cellClient}>Client / engagement</Text>
           <Text style={styles.cellHash}>Entry hash</Text>
         </View>
         {entries.map((e) => (
@@ -72,6 +80,7 @@ function AuditReportDocument({
             <Text style={styles.cellSeq}>{e.sequenceNo}</Text>
             <Text style={styles.cellCategory}>{e.taskCategory}</Text>
             <Text style={styles.cellOutcome}>{e.outcome}</Text>
+            <Text style={styles.cellClient}>{e.clientReference ?? "—"}</Text>
             <Text style={styles.cellHash}>{e.entryHash}</Text>
           </View>
         ))}
@@ -119,6 +128,7 @@ export async function generateAuditReport(firmId: string, generatedByUserId: str
       sequenceNo: schema.verificationLog.sequenceNo,
       taskCategory: schema.verificationLog.taskCategory,
       outcome: schema.verificationLog.outcome,
+      clientReference: schema.verificationLog.clientReference,
       entryHash: schema.verificationLog.entryHash,
     })
     .from(schema.verificationLog)

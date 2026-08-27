@@ -6,9 +6,15 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 const isPublicRoute = createRouteMatcher([
   "/",
   "/policy-generator(.*)",
+  "/get-started(.*)",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks/(.*)",
+  // Auth still required, but enforced inside the route via getFirmContextForApi() so it can
+  // return a JSON error instead of the sign-in redirect auth.protect() would otherwise force —
+  // meaningless to the extension's fetch()-based content-script caller. See
+  // lib/auth/firm-context.ts and lib/db/schema/usage-events.ts.
+  "/api/ai-tool-usage-events(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

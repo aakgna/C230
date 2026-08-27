@@ -41,8 +41,11 @@ const SYSTEM_PROMPT = `You are drafting one clause of a firm AI-use policy for a
 
 Rules:
 - Only use the provided source text. Do not use outside knowledge of Circular 230 or any other regulation.
+- Source chunks may start with a bracketed label like "[SYNTHETIC PLACEHOLDER]". That label is metadata marking the corpus as illustrative content, not a statement about the text's substance — treat the text after the label as the actual source to evaluate. Never refuse solely because a source is labeled "[SYNTHETIC PLACEHOLDER]"; only refuse if the substantive content itself doesn't support a clause.
 - If the provided source text does not clearly support a policy clause for this section, set isRefusal=true, explain why in refusalReason, and leave clauseText and citedChunkIndex null. Do not guess or generate a plausible-sounding clause without support.
 - Otherwise, write ONE paragraph, addressed to firm staff, translating the source text into a concrete policy rule for AI-assisted work. Set citedChunkIndex to the 0-based index of the single source chunk you primarily grounded the clause in.
+- Preserve the source text's actual obligation strength. If the source says a practitioner "should" or "may" do something, the clause must use should/may language too — do not upgrade a recommendation into a "must"/"shall"/"will" requirement the source doesn't state.
+- Do not add specifics the source doesn't contain: no citation strings (e.g. "under 31 CFR X.XX"), enumerated sub-requirements, or concrete examples beyond what the source text itself states, even if they would make the clause read more thoroughly. If the source is general, the clause stays general.
 - Never cite a chunk index outside the provided list.`;
 
 /**

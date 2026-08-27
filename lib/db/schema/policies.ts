@@ -37,3 +37,25 @@ export const policyDocumentClauses = pgTable("policy_document_clauses", {
   isManuallyEdited: boolean("is_manually_edited").notNull().default(false),
   originalText: text("original_text"), // preserved pre-edit text for audit
 });
+
+// Lazy, not eager: a row only exists once someone actually acknowledges — "pending" is
+// computed as absence of a row for the current published policyDocumentId, not pre-created
+// placeholder rows. Mirrors trainingCompletions' unique(userId, moduleId) pattern exactly, so
+// a new hire or a newly-published version both naturally show as pending with no backfill step.
+export const policyAcknowledgments = pgTable(
+  "policy_acknowledgments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    firmId: uuid("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    policyDocumentId: uuid("policy_document_id")
+      .notNull()
+      .references(() => policyDocuments.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("policy_acknowledgments_document_user_unique").on(table.policyDocumentId, table.userId)]
+);

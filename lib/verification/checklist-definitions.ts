@@ -7,6 +7,7 @@ export const CHECKLIST_ITEMS = [
   { key: "superseded_law_check", label: "Checked for superseded law/regulation changes" },
   { key: "client_facts_confirmed", label: "Client-specific facts confirmed accurate" },
   { key: "output_reviewed_in_full", label: "AI output reviewed in full (not skimmed)" },
+  { key: "client_consent_confirmed", label: "Client consent for AI use on this data confirmed (IRC §7216)" },
 ] as const;
 
 export type ChecklistKey = (typeof CHECKLIST_ITEMS)[number]["key"];

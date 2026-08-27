@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Circular 230 Verification Reminder",
+  "version": "0.1.0",
+  "description": "Reminds firm staff to log a Circular 230 verification entry after using an AI chat tool.",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Circular 230 Reminder — click to configure"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "permissions": ["tabs", "notifications", "storage", "alarms", "scripting"],
+  "host_permissions": [
+    "*://*.chatgpt.com/*",
+    "*://*.claude.ai/*",
+    "*://*.gemini.google.com/*",
+    "*://*.copilot.microsoft.com/*",
+    "*://*.perplexity.ai/*"
+  ],
+  "optional_host_permissions": ["<all_urls>"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

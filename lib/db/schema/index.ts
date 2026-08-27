@@ -6,3 +6,4 @@ export * from "./corpus";
 export * from "./policies";
 export * from "./eval";
 export * from "./audit";
+export * from "./usage-events";

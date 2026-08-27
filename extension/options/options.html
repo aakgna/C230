@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Circular 230 Reminder — Settings</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        padding: 20px;
+        width: 360px;
+        color: #1a1a1a;
+      }
+      h1 {
+        font-size: 15px;
+        margin: 0 0 12px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 4px;
+        color: #444;
+      }
+      input {
+        width: 100%;
+        padding: 7px 8px;
+        box-sizing: border-box;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        margin-top: 10px;
+        padding: 7px 14px;
+        font-size: 13px;
+        border: none;
+        border-radius: 4px;
+        background: #1d4ed8;
+        color: white;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #1e40af;
+      }
+      p.hint {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+      }
+      p.status {
+        font-size: 12px;
+        min-height: 16px;
+        margin-top: 8px;
+      }
+      p.status.ok {
+        color: #0a7c2f;
+      }
+      p.status.error {
+        color: #b91c1c;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Circular 230 Verification Reminder</h1>
+    <label for="appBaseUrl">Your firm's Circular 230 app URL</label>
+    <input id="appBaseUrl" type="url" placeholder="https://circular230.yourfirm.com" />
+    <p class="hint">Used to open the verification-entry form when you get a reminder. You must already be logged in
+      to the app in this browser.</p>
+    <button id="save">Save</button>
+    <p class="status" id="status"></p>
+    <script src="options.js" type="module"></script>
+  </body>
+</html>

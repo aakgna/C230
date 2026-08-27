@@ -72,7 +72,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 1rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -126,5 +126,86 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Marketing site tokens — a self-contained "regulatory ledger" palette,
+   scoped to .c230-marketing so it never bleeds into the authenticated app's
+   shadcn theme above. */
+.c230-marketing {
+  --c230-paper: #f5f3ec;
+  --c230-paper-raised: #fffdf8;
+  --c230-ink: #1c2430;
+  --c230-ink-soft: #5b6472;
+  --c230-ledger: #2f5d50;
+  --c230-ledger-soft: #e3ece6;
+  --c230-flag: #a23b2e;
+  --c230-flag-soft: #f4e4e0;
+  --c230-citation: #3a5a8c;
+  --c230-citation-soft: #e6ebf3;
+  --c230-hairline: #ddd5c3;
+  --c230-hairline-strong: #c7bda5;
+}
+
+@keyframes c230-annotate-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.c230-annotate {
+  animation: c230-annotate-in 0.5s ease-out both;
+}
+
+/* App-wide (not marketing-scoped) — used by the policy-generation loading
+   state's step list. */
+@keyframes check-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-check-pop {
+  animation: check-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes row-settle-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-row-settle {
+  animation: row-settle-in 0.3s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-check-pop,
+  .animate-row-settle {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c230-annotate {
+    animation: none;
   }
 }

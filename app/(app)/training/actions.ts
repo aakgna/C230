@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
@@ -33,4 +34,5 @@ export async function recordTrainingCompletion(formData: FormData) {
 
   revalidatePath("/training");
   revalidatePath(`/training/${moduleId}`);
+  redirect("/training");
 }

@@ -1,24 +1,23 @@
+import Link from "next/link";
+import { AlertTriangleIcon } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CHECKLIST_ITEMS } from "@/lib/verification/checklist-definitions";
-import { taskCategoryValues, verificationOutcomeValues, reviewerRoleValues } from "@/lib/validation/schemas";
-import { createVerificationEntry } from "../actions";
+import { findToolByDomain } from "@/lib/tools/match-domain";
+import { EntryForm, toDatetimeLocal } from "../entry-form";
+import { submitVerificationEntry } from "../actions";
 
-function toDatetimeLocal(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+// Deliberately says nothing about compliance, pass/fail, or "escalation" — those aren't concepts
+// this app has a mechanism for. Just states the register's current status; the reviewer decides
+// what that means for this specific entry, e.g. via the existing "assumptions noted" field.
+const STATUS_BANNER: Partial<Record<string, { text: string }>> = {
+  prohibited: { text: "is currently marked prohibited in your firm's AI tool register." },
+  under_review: { text: "is currently marked under review in your firm's AI tool register." },
+};
 
-export default async function NewVerificationEntryPage() {
+export default async function NewVerificationEntryPage(props: PageProps<"/verification/new">) {
   const ctx = await requireFirmContext();
+  const searchParams = await props.searchParams;
   const db = getDb();
 
   const [users, tools] = await Promise.all([
@@ -28,144 +27,55 @@ export default async function NewVerificationEntryPage() {
 
   const now = toDatetimeLocal(new Date());
 
+  // Populated when the browser extension deep-links here after detecting the user left a
+  // watched AI site — lets the tool selection auto-fill instead of requiring a manual pick.
+  const domainParam = typeof searchParams.domain === "string" ? searchParams.domain.toLowerCase() : undefined;
+  const matchedTool = domainParam ? findToolByDomain(domainParam, tools) : undefined;
+  // The extension also captures the exact chat URL (not just the domain) when it detects the
+  // user left a watched tab — prefills "evidence location" so nobody has to copy-paste it.
+  const evidenceUrlParam = typeof searchParams.evidenceUrl === "string" ? searchParams.evidenceUrl : undefined;
+  // And the moment they left it — a closer proxy for "AI output generated at" than page-load
+  // time, since the reviewer may not click the notification until several minutes later.
+  const leftAtParam = typeof searchParams.leftAt === "string" ? new Date(searchParams.leftAt) : undefined;
+  const aiOutputGeneratedAtDefault =
+    leftAtParam && !Number.isNaN(leftAtParam.getTime()) ? toDatetimeLocal(leftAtParam) : now;
+
+  const statusBanner = matchedTool ? STATUS_BANNER[matchedTool.status] : undefined;
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Log a review</h1>
         <p className="text-sm text-muted-foreground">
-          Once submitted, this entry is permanent — corrections are logged as new entries, not edits.
+          Once submitted, this entry needs approval from a different reviewer before it becomes part of the
+          permanent record.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Review details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={createVerificationEntry} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="practitionerId">Practitioner</Label>
-                <Select name="practitionerId" required>
-                  <SelectTrigger id="practitionerId" className="w-full">
-                    <SelectValue placeholder="Select practitioner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.fullName ?? u.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      {statusBanner && matchedTool && (
+        <div className="flex items-start gap-2 rounded-md border bg-muted/50 px-4 py-3 text-sm">
+          <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <span className="text-muted-foreground">
+            {matchedTool.toolName} {statusBanner.text}
+          </span>
+          <Link href={`/tools/${matchedTool.id}`} className="ml-auto shrink-0 underline underline-offset-4">
+            View register entry
+          </Link>
+        </div>
+      )}
 
-              <div className="space-y-1.5">
-                <Label htmlFor="reviewerRole">Reviewer role</Label>
-                <Select name="reviewerRole" required>
-                  <SelectTrigger id="reviewerRole" className="w-full">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {reviewerRoleValues.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {role.replace("_", " ")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="aiToolId">AI tool used</Label>
-                <Select name="aiToolId" required>
-                  <SelectTrigger id="aiToolId" className="w-full">
-                    <SelectValue placeholder="Select tool" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tools.map((tool) => (
-                      <SelectItem key={tool.id} value={tool.id}>
-                        {tool.toolName}
-                        {tool.status === "prohibited" ? " (prohibited — do not use)" : ""}
-                        {tool.status === "under_review" ? " (under review)" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="taskCategory">Task category</Label>
-                <Select name="taskCategory" required>
-                  <SelectTrigger id="taskCategory" className="w-full">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {taskCategoryValues.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat.replace(/_/g, " ")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Checklist reviewed</Label>
-              <div className="space-y-2 rounded-lg border p-3">
-                {CHECKLIST_ITEMS.map((item) => (
-                  <label key={item.key} className="flex items-center gap-2 text-sm">
-                    <Checkbox name={item.key} />
-                    {item.label}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="aiOutputGeneratedAt">AI output generated at</Label>
-                <Input type="datetime-local" id="aiOutputGeneratedAt" name="aiOutputGeneratedAt" defaultValue={now} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="reviewCompletedAt">Review completed at</Label>
-                <Input type="datetime-local" id="reviewCompletedAt" name="reviewCompletedAt" defaultValue={now} required />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="deliveredToClientAt">Delivered to client at (optional)</Label>
-              <Input type="datetime-local" id="deliveredToClientAt" name="deliveredToClientAt" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="outcome">Outcome</Label>
-              <Select name="outcome" required>
-                <SelectTrigger id="outcome" className="w-full">
-                  <SelectValue placeholder="Select outcome" />
-                </SelectTrigger>
-                <SelectContent>
-                  {verificationOutcomeValues.map((outcome) => (
-                    <SelectItem key={outcome} value={outcome}>
-                      {outcome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="flagReason">Flag reason (required if outcome is &quot;flagged&quot;)</Label>
-              <Textarea id="flagReason" name="flagReason" rows={3} />
-            </div>
-
-            <Button type="submit">Submit review</Button>
-          </form>
-        </CardContent>
-      </Card>
+      <EntryForm
+        action={submitVerificationEntry}
+        users={users}
+        tools={tools}
+        defaultValues={{
+          practitionerId: ctx.userId,
+          aiToolId: matchedTool?.id,
+          evidenceLocation: evidenceUrlParam,
+          aiOutputGeneratedAt: aiOutputGeneratedAtDefault,
+          reviewCompletedAt: now,
+        }}
+      />
     </div>
   );
 }

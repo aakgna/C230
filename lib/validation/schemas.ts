@@ -3,15 +3,31 @@ import { CHECKLIST_ITEMS } from "@/lib/verification/checklist-definitions";
 
 export const toolStatusValues = ["approved", "under_review", "prohibited"] as const;
 
+// Comma-separated hostnames from a form field, normalized to bare lowercase domains
+// (matches what the browser extension reports via `new URL(url).hostname`).
+export function parseDomainsInput(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return [
+    ...new Set(
+      raw
+        .split(",")
+        .map((d) => d.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, ""))
+        .filter(Boolean)
+    ),
+  ];
+}
+
 export const updateToolStatusSchema = z.object({
   toolId: z.uuid(),
   status: z.enum(toolStatusValues),
   vettingNotes: z.string().trim().max(4000).optional(),
+  domains: z.string().trim().max(500).optional(),
 });
 
 export const addCustomToolSchema = z.object({
   toolName: z.string().trim().min(1).max(200),
   vettingNotes: z.string().trim().max(4000).optional(),
+  domains: z.string().trim().max(500).optional(),
 });
 
 export const taskCategoryValues = [
@@ -43,12 +59,15 @@ export const createVerificationEntrySchema = z
     practitionerId: z.uuid(),
     aiToolId: z.uuid(),
     taskCategory: z.enum(taskCategoryValues),
+    clientReference: z.string().trim().max(300).optional(),
+    evidenceLocation: z.string().trim().max(2000).optional(),
     checklistItemsReviewed: z.object(
       Object.fromEntries(CHECKLIST_ITEMS.map((item) => [item.key, z.boolean()])) as Record<
         (typeof CHECKLIST_ITEMS)[number]["key"],
         z.ZodBoolean
       >
     ),
+    assumptionsNoted: z.string().trim().max(2000).optional(),
     outcome: z.enum(verificationOutcomeValues),
     flagReason: z.string().trim().max(4000).optional(),
     aiOutputGeneratedAt: isoDatetimeLocal,
@@ -68,6 +87,31 @@ export const createVerificationEntrySchema = z
     message: "Delivery must be at or after review completion",
     path: ["deliveredToClientAt"],
   });
+
+export const decisionValues = ["approved", "rejected"] as const;
+
+export const decideSubmissionSchema = z
+  .object({
+    submissionId: z.uuid(),
+    decision: z.enum(decisionValues),
+    decisionNotes: z.string().trim().max(4000).optional(),
+  })
+  .refine((data) => data.decision !== "rejected" || !!data.decisionNotes, {
+    message: "Notes are required when rejecting a submission",
+    path: ["decisionNotes"],
+  });
+
+export const appRoleValues = ["firm_admin", "practitioner"] as const;
+
+export const updateMemberSchema = z.object({
+  userId: z.uuid(),
+  appRole: z.enum(appRoleValues),
+  isLogReviewer: z.boolean(),
+});
+
+export const transferOwnershipSchema = z.object({
+  newOwnerId: z.uuid(),
+});
 
 export const clientDataSensitivityValues = ["low", "moderate", "high"] as const;
 

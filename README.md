@@ -2,7 +2,7 @@
 
 A compliance-and-workflow app for small tax/accounting firms to document AI use under Treasury Circular 230 (IRS OPR Alert 2026-19): a Circular 230-mapped AI-use policy generator, staff training tracking, an AI tool register, and a structured, tamper-evident verification log of AI-assisted work.
 
-This is the Phase 0 scaffold — see [`docs/plan.md`](#) history for the full build plan. Out of scope for this phase: CPE accreditation, cross-firm benchmarking, browser/email integrations, production cloud infra hardening, fine-tuning.
+This is the Phase 0 scaffold — see [`docs/plan.md`](#) history for the full build plan. Out of scope for this phase: CPE accreditation, cross-firm benchmarking, production cloud infra hardening, fine-tuning. (A Chrome extension for verification-log reminders was added post-scaffold — see [`extension/`](./extension) and [`docs/chrome-extension-verification-reminder-plan.md`](./docs/chrome-extension-verification-reminder-plan.md).)
 
 ## Stack
 
