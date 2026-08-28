@@ -20,6 +20,7 @@ type EntryFormDefaultValues = {
   aiToolId?: string;
   taskCategory?: string;
   evidenceLocation?: string;
+  documentReference?: string;
   checklistItemsReviewed?: ChecklistItemsReviewed;
   assumptionsNoted?: string;
   aiOutputGeneratedAt: string;
@@ -101,21 +102,21 @@ export function EntryForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="clientReference">Client / engagement reference (optional)</Label>
-              <Input
-                id="clientReference"
-                name="clientReference"
-                maxLength={300}
-                defaultValue={defaultValues.clientReference ?? ""}
-                placeholder="Client name, return ID, or matter number"
-              />
-              <p className="text-xs text-muted-foreground">
-                Without it, this entry can&apos;t be found again if asked about a specific client&apos;s return.
-              </p>
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="clientReference">Client / engagement reference (optional)</Label>
+            <Input
+              id="clientReference"
+              name="clientReference"
+              maxLength={300}
+              defaultValue={defaultValues.clientReference ?? ""}
+              placeholder="Client name, return ID, or matter number"
+            />
+            <p className="text-xs text-muted-foreground">
+              Without it, this entry can&apos;t be found again if asked about a specific client&apos;s return.
+            </p>
+          </div>
 
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="evidenceLocation">Evidence location (optional)</Label>
               <Input
@@ -128,6 +129,20 @@ export function EntryForm({
               <p className="text-xs text-muted-foreground">
                 A pointer to the AI transcript — this app doesn&apos;t store the transcript itself. Auto-filled from the
                 browser extension.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="documentReference">Document reference (optional)</Label>
+              <Input
+                id="documentReference"
+                name="documentReference"
+                maxLength={300}
+                defaultValue={defaultValues.documentReference ?? ""}
+                placeholder="Whatever your firm calls this file — DMS ID, filename, etc."
+              />
+              <p className="text-xs text-muted-foreground">
+                Free text — your firm&apos;s own naming/filing convention, so this entry is easy to look up on your end.
               </p>
             </div>
           </div>

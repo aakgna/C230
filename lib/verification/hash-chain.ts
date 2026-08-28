@@ -31,6 +31,7 @@ export type NewVerificationEntryInput = {
   checklistItemsReviewed: ChecklistItemsReviewed;
   assumptionsNoted?: string | null;
   evidenceLocation?: string | null;
+  documentReference?: string | null;
   outcome: VerificationOutcome;
   flagReason?: string | null;
   aiOutputGeneratedAt: Date;
@@ -158,6 +159,7 @@ export async function appendVerificationEntry(input: NewVerificationEntryInput) 
         checklistItemsReviewed: input.checklistItemsReviewed,
         assumptionsNoted: input.assumptionsNoted ?? null,
         evidenceLocation: input.evidenceLocation ?? null,
+        documentReference: input.documentReference ?? null,
         outcome: input.outcome,
         flagReason,
         aiOutputGeneratedAt: input.aiOutputGeneratedAt,

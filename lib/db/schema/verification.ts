@@ -64,6 +64,11 @@ export const verificationLog = pgTable(
     // copy of client data. See docs/ai-trace-attachments-plan.md for why full storage was
     // considered and not pursued.
     evidenceLocation: text("evidence_location"),
+    // Free text, deliberately unstructured: the document's name/ID per the firm's own DMS
+    // convention (e.g. "Smith_1040_2026", or an iManage/NetDocuments doc ID), purely so the
+    // firm can look this entry's evidence up in their own system later. This app can't enforce
+    // one naming scheme across firms, same reasoning as clientReference below.
+    documentReference: text("document_reference"),
     outcome: verificationOutcomeEnum("outcome").notNull(),
     flagReason: text("flag_reason"),
     aiOutputGeneratedAt: timestamp("ai_output_generated_at", { withTimezone: true }).notNull(),
@@ -128,6 +133,7 @@ export const verificationSubmissions = pgTable(
     checklistItemsReviewed: jsonb("checklist_items_reviewed").notNull(),
     assumptionsNoted: text("assumptions_noted"),
     evidenceLocation: text("evidence_location"),
+    documentReference: text("document_reference"),
     outcome: verificationOutcomeEnum("outcome").notNull(),
     flagReason: text("flag_reason"),
     aiOutputGeneratedAt: timestamp("ai_output_generated_at", { withTimezone: true }).notNull(),

@@ -36,6 +36,7 @@ export default async function PendingSubmissionDetailPage(props: PageProps<"/ver
       checklistItemsReviewed: schema.verificationSubmissions.checklistItemsReviewed,
       assumptionsNoted: schema.verificationSubmissions.assumptionsNoted,
       evidenceLocation: schema.verificationSubmissions.evidenceLocation,
+      documentReference: schema.verificationSubmissions.documentReference,
       outcome: schema.verificationSubmissions.outcome,
       flagReason: schema.verificationSubmissions.flagReason,
       aiOutputGeneratedAt: schema.verificationSubmissions.aiOutputGeneratedAt,
@@ -110,6 +111,7 @@ export default async function PendingSubmissionDetailPage(props: PageProps<"/ver
           {submission.flagReason && <Row label="Flag reason" value={submission.flagReason} />}
           {submission.assumptionsNoted && <Row label="Assumptions noted" value={submission.assumptionsNoted} />}
           {submission.evidenceLocation && <Row label="Evidence location" value={submission.evidenceLocation} />}
+          {submission.documentReference && <Row label="Document reference" value={submission.documentReference} />}
           <Row label="AI output generated" value={submission.aiOutputGeneratedAt.toLocaleString()} />
           <Row label="Review completed" value={submission.reviewCompletedAt.toLocaleString()} />
           {submission.deliveredToClientAt && (
@@ -195,6 +197,7 @@ export default async function PendingSubmissionDetailPage(props: PageProps<"/ver
               aiToolId: submission.aiToolId,
               taskCategory: submission.taskCategory,
               evidenceLocation: submission.evidenceLocation ?? undefined,
+              documentReference: submission.documentReference ?? undefined,
               checklistItemsReviewed: checklist,
               assumptionsNoted: submission.assumptionsNoted ?? undefined,
               aiOutputGeneratedAt: toDatetimeLocal(submission.aiOutputGeneratedAt),

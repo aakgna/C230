@@ -57,6 +57,13 @@
       "when": 1787777050711,
       "tag": "0007_orange_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787881700534,
+      "tag": "0008_gigantic_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

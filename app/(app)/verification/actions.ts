@@ -28,6 +28,7 @@ export async function submitVerificationEntry(formData: FormData) {
       checklistItemsReviewed: parsed.checklistItemsReviewed,
       assumptionsNoted: parsed.assumptionsNoted ?? null,
       evidenceLocation: parsed.evidenceLocation ?? null,
+      documentReference: parsed.documentReference ?? null,
       outcome: parsed.outcome,
       flagReason: parsed.flagReason ?? null,
       aiOutputGeneratedAt: parsed.aiOutputGeneratedAt,

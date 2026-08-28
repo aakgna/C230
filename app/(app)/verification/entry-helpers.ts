@@ -25,6 +25,7 @@ export function parseVerificationEntryFormData(formData: FormData) {
     checklistItemsReviewed,
     assumptionsNoted: formData.get("assumptionsNoted") || undefined,
     evidenceLocation: formData.get("evidenceLocation") || undefined,
+    documentReference: formData.get("documentReference") || undefined,
     outcome: formData.get("outcome"),
     flagReason: formData.get("flagReason") || undefined,
     aiOutputGeneratedAt: formData.get("aiOutputGeneratedAt"),

@@ -61,6 +61,7 @@ export const createVerificationEntrySchema = z
     taskCategory: z.enum(taskCategoryValues),
     clientReference: z.string().trim().max(300).optional(),
     evidenceLocation: z.string().trim().max(2000).optional(),
+    documentReference: z.string().trim().max(300).optional(),
     checklistItemsReviewed: z.object(
       Object.fromEntries(CHECKLIST_ITEMS.map((item) => [item.key, z.boolean()])) as Record<
         (typeof CHECKLIST_ITEMS)[number]["key"],

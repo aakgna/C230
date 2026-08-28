@@ -32,6 +32,7 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
       checklistItemsReviewed: schema.verificationLog.checklistItemsReviewed,
       assumptionsNoted: schema.verificationLog.assumptionsNoted,
       evidenceLocation: schema.verificationLog.evidenceLocation,
+      documentReference: schema.verificationLog.documentReference,
       aiOutputGeneratedAt: schema.verificationLog.aiOutputGeneratedAt,
       reviewCompletedAt: schema.verificationLog.reviewCompletedAt,
       deliveredToClientAt: schema.verificationLog.deliveredToClientAt,
@@ -106,6 +107,7 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
               }
             />
           )}
+          {entry.documentReference && <Row label="Document reference" value={entry.documentReference} />}
           <Row label="AI output generated" value={entry.aiOutputGeneratedAt.toLocaleString()} />
           <Row label="Review completed" value={entry.reviewCompletedAt.toLocaleString()} />
           {entry.deliveredToClientAt && <Row label="Delivered to client" value={entry.deliveredToClientAt.toLocaleString()} />}
