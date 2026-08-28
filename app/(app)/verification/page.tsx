@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 
-const OUTCOME_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  approved: "default",
+const OUTCOME_VARIANT: Record<string, "success" | "secondary" | "destructive"> = {
+  approved: "success",
   flagged: "destructive",
   escalated: "destructive",
   rejected: "secondary",
@@ -76,8 +76,8 @@ export default async function VerificationLogPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {entries.map((entry) => (
-            <TableRow key={entry.id}>
+          {entries.map((entry, i) => (
+            <TableRow key={entry.id} style={{ animationDelay: `${i * 40}ms` }} className="animate-row-settle">
               <TableCell className="text-muted-foreground">{entry.sequenceNo}</TableCell>
               <TableCell>{entry.taskCategory.replace(/_/g, " ")}</TableCell>
               <TableCell>{entry.toolName}</TableCell>

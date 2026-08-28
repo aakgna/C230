@@ -5,10 +5,11 @@ import { requireFirmContext } from "@/lib/auth/firm-context";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ActionToast } from "@/components/action-toast";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  pending: "secondary",
-  approved: "default",
+const STATUS_VARIANT: Record<string, "info" | "success" | "destructive"> = {
+  pending: "info",
+  approved: "success",
   rejected: "destructive",
 };
 
@@ -53,6 +54,9 @@ export default async function PendingVerificationPage() {
 
   return (
     <div className="space-y-6">
+      <ActionToast
+        outcomes={[{ param: "rejected", message: "Submission rejected", description: "Sent back to the submitter.", tone: "warning" }]}
+      />
       <div>
         <h1 className="text-2xl font-semibold">Pending review</h1>
         <p className="text-sm text-muted-foreground">
@@ -80,10 +84,10 @@ export default async function PendingVerificationPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {needsReview.map((s) => {
+                {needsReview.map((s, i) => {
                   const selfConflicted = s.submittedBy === ctx.userId || s.practitionerId === ctx.userId;
                   return (
-                    <TableRow key={s.id}>
+                    <TableRow key={s.id} style={{ animationDelay: `${i * 40}ms` }} className="animate-row-settle">
                       <TableCell>{s.taskCategory.replace(/_/g, " ")}</TableCell>
                       <TableCell>{s.toolName}</TableCell>
                       <TableCell>{s.submittedByName ?? "—"}</TableCell>
@@ -124,8 +128,8 @@ export default async function PendingVerificationPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mySubmissions.map((s) => (
-                <TableRow key={s.id}>
+              {mySubmissions.map((s, i) => (
+                <TableRow key={s.id} style={{ animationDelay: `${i * 40}ms` }} className="animate-row-settle">
                   <TableCell>{s.taskCategory.replace(/_/g, " ")}</TableCell>
                   <TableCell>{s.toolName}</TableCell>
                   <TableCell>

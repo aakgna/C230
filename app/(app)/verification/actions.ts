@@ -39,5 +39,5 @@ export async function submitVerificationEntry(formData: FormData) {
     })
     .returning();
 
-  redirect(`/verification/pending/${submission.id}`);
+  redirect(`/verification/pending/${submission.id}?submitted=1`);
 }

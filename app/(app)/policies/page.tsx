@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
+const STATUS_VARIANT: Record<string, "success" | "secondary" | "outline"> = {
   draft: "secondary",
-  published: "default",
+  published: "success",
   superseded: "outline",
 };
 
@@ -44,8 +44,8 @@ export default async function PoliciesPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {docs.map((doc) => (
-            <TableRow key={doc.id}>
+          {docs.map((doc, i) => (
+            <TableRow key={doc.id} style={{ animationDelay: `${i * 40}ms` }} className="animate-row-settle">
               <TableCell>v{doc.version}</TableCell>
               <TableCell>
                 <Badge variant={STATUS_VARIANT[doc.status] ?? "secondary"}>{doc.status}</Badge>

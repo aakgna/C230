@@ -34,7 +34,7 @@ export function RadialProgress({
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          className="stroke-foreground transition-[stroke-dashoffset] duration-500"
+          className="stroke-success transition-[stroke-dashoffset] duration-500"
         />
       </svg>
       <span className="absolute text-lg font-semibold">{label}</span>
@@ -50,7 +50,7 @@ export function LatencyHistogram({ buckets }: { buckets: { label: string; count:
         <div key={b.label} className="flex items-center gap-2 text-xs">
           <span className="w-16 shrink-0 text-muted-foreground">{b.label}</span>
           <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-foreground" style={{ width: `${(b.count / max) * 100}%` }} />
+            <div className="h-full rounded-full bg-info" style={{ width: `${(b.count / max) * 100}%` }} />
           </div>
           <span className="w-4 shrink-0 text-right tabular-nums text-muted-foreground">{b.count}</span>
         </div>
@@ -131,7 +131,7 @@ export function BarList({
             <span className="shrink-0 text-muted-foreground">{item.sublabel}</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-foreground" style={{ width: `${(item.value / max) * 100}%` }} />
+            <div className="h-full rounded-full bg-info" style={{ width: `${(item.value / max) * 100}%` }} />
           </div>
         </div>
       ))}

@@ -117,7 +117,7 @@ export async function publishPolicyDocument(formData: FormData) {
     .set({ status: "published", effectiveDate: new Date().toISOString().slice(0, 10) })
     .where(eq(schema.policyDocuments.id, doc.id));
 
-  redirect(`/policies/${doc.id}`);
+  redirect(`/policies/${doc.id}?published=1`);
 }
 
 const acknowledgeSchema = z.object({ policyDocumentId: z.uuid() });
@@ -146,5 +146,5 @@ export async function acknowledgePolicy(formData: FormData) {
     .values({ firmId: ctx.firmId, policyDocumentId, userId: ctx.userId })
     .onConflictDoNothing({ target: [schema.policyAcknowledgments.policyDocumentId, schema.policyAcknowledgments.userId] });
 
-  redirect(`/policies/${policyDocumentId}`);
+  redirect(`/policies/${policyDocumentId}?acknowledged=1`);
 }

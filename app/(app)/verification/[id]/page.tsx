@@ -9,9 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CheckIcon, XIcon } from "lucide-react";
+import { ActionToast } from "@/components/action-toast";
+import { cn } from "@/lib/utils";
 
 export default async function VerificationEntryDetailPage(props: PageProps<"/verification/[id]">) {
   const { id } = await props.params;
+  const searchParams = await props.searchParams;
   const ctx = await requireFirmContext();
   const db = getDb();
   const approvers = alias(schema.users, "approvers");
@@ -52,17 +55,31 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
 
   const chainResult = await verifyChain(ctx.firmId);
   const checklist = entry.checklistItemsReviewed as ChecklistItemsReviewed;
+  const justApproved = searchParams.approved === "1";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      <ActionToast
+        outcomes={[
+          {
+            param: "approved",
+            message: `Approved — entry #${entry.sequenceNo} added to the verification log`,
+            tone: "success",
+            celebrate: true,
+          },
+        ]}
+      />
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Verification entry #{entry.sequenceNo}</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold">
+          Verification entry #{entry.sequenceNo}
+          {justApproved && <CheckIcon className="animate-check-pop size-5 text-success" strokeWidth={3} />}
+        </h1>
         <Badge variant={chainResult.valid ? "default" : "destructive"}>
           {chainResult.valid ? "Chain intact" : "Chain integrity FAILED"}
         </Badge>
       </div>
 
-      <Card>
+      <Card className={cn(justApproved && "animate-glow-fade")}>
         <CardHeader>
           <CardTitle className="text-base">Review</CardTitle>
         </CardHeader>

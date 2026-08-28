@@ -6,9 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CheckIcon } from "lucide-react";
+import { ActionToast } from "@/components/action-toast";
+import { cn } from "@/lib/utils";
 
-export default async function TrainingPage() {
+export default async function TrainingPage(props: PageProps<"/training">) {
   const ctx = await requireFirmContext();
+  const searchParams = await props.searchParams;
   const db = getDb();
 
   const modules = await db.select().from(schema.trainingModules).where(eq(schema.trainingModules.isActive, true));
@@ -29,18 +32,26 @@ export default async function TrainingPage() {
     matrix = { users, completions: new Set(completions.map((c) => `${c.userId}:${c.moduleId}`)) };
   }
 
+  const justCompletedId = typeof searchParams.completed === "string" ? searchParams.completed : undefined;
+
   return (
     <div className="space-y-8">
+      <ActionToast outcomes={[{ param: "completed", message: "Module completed", tone: "success", celebrate: true }]} />
       <div>
         <h1 className="text-2xl font-semibold">Training</h1>
         <p className="text-sm text-muted-foreground">AI-literacy modules mapped to §10.35 competence obligations.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {modules.map((mod) => {
+        {modules.map((mod, i) => {
           const completed = myCompletedIds.has(mod.id);
+          const justCompleted = mod.id === justCompletedId;
           return (
-            <Card key={mod.id}>
+            <Card
+              key={mod.id}
+              style={{ animationDelay: `${i * 40}ms` }}
+              className={cn(justCompleted ? "animate-row-settle-glow ring-1 ring-success/40" : "animate-row-settle")}
+            >
               <CardHeader className="flex-row items-start justify-between space-y-0">
                 <CardTitle className="text-base">
                   <Link href={`/training/${mod.id}`} className="underline underline-offset-4">
@@ -48,8 +59,8 @@ export default async function TrainingPage() {
                   </Link>
                 </CardTitle>
                 {completed && (
-                  <Badge className="gap-1">
-                    <CheckIcon className="size-3" /> Done
+                  <Badge variant="success" className="gap-1">
+                    <CheckIcon className={cn("size-3", justCompleted && "animate-check-pop")} /> Done
                   </Badge>
                 )}
               </CardHeader>

@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangleIcon, CheckIcon } from "lucide-react";
 import { publishPolicyDocument, acknowledgePolicy } from "../actions";
+import { ActionToast } from "@/components/action-toast";
+import { cn } from "@/lib/utils";
 
 export default async function PolicyDetailPage(props: PageProps<"/policies/[id]">) {
   const { id } = await props.params;
+  const searchParams = await props.searchParams;
   const ctx = await requireFirmContext();
   const db = getDb();
 
@@ -91,8 +94,22 @@ export default async function PolicyDetailPage(props: PageProps<"/policies/[id]"
     ackMatrix = { users: firmUsers, acknowledgedIds: new Set(acks.map((a) => a.userId)) };
   }
 
+  const justPublished = searchParams.published === "1";
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <ActionToast
+        outcomes={[
+          {
+            param: "published",
+            message: "Published",
+            description: "This is now your firm's official AI-use policy.",
+            tone: "success",
+            celebrate: true,
+          },
+          { param: "acknowledged", message: "Acknowledged", tone: "success", celebrate: true },
+        ]}
+      />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">AI-Use Policy v{doc.version}</h1>
@@ -101,7 +118,13 @@ export default async function PolicyDetailPage(props: PageProps<"/policies/[id]"
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={doc.status === "published" ? "default" : "secondary"}>{doc.status}</Badge>
+          <Badge
+            variant={doc.status === "published" ? "success" : "secondary"}
+            className={cn(justPublished && "animate-glow-fade gap-1 ring-1 ring-success/40")}
+          >
+            {justPublished && <CheckIcon className="animate-check-pop size-3" strokeWidth={3} />}
+            {doc.status}
+          </Badge>
           {latestEvalRun && (
             <Badge variant={latestEvalRun.passed ? "default" : "destructive"}>
               {latestEvalRun.passed ? "Eval passed" : "Eval flagged issues"}
@@ -195,8 +218,8 @@ export default async function PolicyDetailPage(props: PageProps<"/policies/[id]"
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ackMatrix.users.map((user) => (
-                <TableRow key={user.id}>
+              {ackMatrix.users.map((user, i) => (
+                <TableRow key={user.id} style={{ animationDelay: `${i * 40}ms` }} className="animate-row-settle">
                   <TableCell className="font-medium">{user.fullName ?? user.email}</TableCell>
                   <TableCell className="text-center">
                     {ackMatrix!.acknowledgedIds.has(user.id) ? (

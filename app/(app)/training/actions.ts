@@ -34,5 +34,5 @@ export async function recordTrainingCompletion(formData: FormData) {
 
   revalidatePath("/training");
   revalidatePath(`/training/${moduleId}`);
-  redirect("/training");
+  redirect(`/training?completed=${moduleId}`);
 }

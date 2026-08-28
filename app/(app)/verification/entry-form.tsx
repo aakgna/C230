@@ -101,19 +101,35 @@ export function EntryForm({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="clientReference">Client / engagement reference (optional)</Label>
-            <Input
-              id="clientReference"
-              name="clientReference"
-              maxLength={300}
-              defaultValue={defaultValues.clientReference ?? ""}
-              placeholder="Client name, return ID, or matter number"
-            />
-            <p className="text-xs text-muted-foreground">
-              Fill this in for client-facing work — without it, this entry can&apos;t be found again if asked about a
-              specific client&apos;s return.
-            </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="clientReference">Client / engagement reference (optional)</Label>
+              <Input
+                id="clientReference"
+                name="clientReference"
+                maxLength={300}
+                defaultValue={defaultValues.clientReference ?? ""}
+                placeholder="Client name, return ID, or matter number"
+              />
+              <p className="text-xs text-muted-foreground">
+                Without it, this entry can&apos;t be found again if asked about a specific client&apos;s return.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="evidenceLocation">Evidence location (optional)</Label>
+              <Input
+                id="evidenceLocation"
+                name="evidenceLocation"
+                maxLength={2000}
+                defaultValue={defaultValues.evidenceLocation ?? ""}
+                placeholder="Chat URL, or a path/link into your firm's own file storage"
+              />
+              <p className="text-xs text-muted-foreground">
+                A pointer to the AI transcript — this app doesn&apos;t store the transcript itself. Auto-filled from the
+                browser extension.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -166,24 +182,9 @@ export function EntryForm({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="evidenceLocation">Evidence location (optional)</Label>
-            <Input
-              id="evidenceLocation"
-              name="evidenceLocation"
-              maxLength={2000}
-              defaultValue={defaultValues.evidenceLocation ?? ""}
-              placeholder="Chat URL, or a path/link into your firm's own file storage"
-            />
-            <p className="text-xs text-muted-foreground">
-              A pointer to where the actual AI transcript lives — this app doesn&apos;t store the transcript itself.
-              Auto-filled when logged from the browser extension.
-            </p>
-          </div>
-
           <div className="space-y-2">
             <Label>Checklist reviewed</Label>
-            <div className="space-y-2 rounded-lg border p-3">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 rounded-lg border p-3">
               {CHECKLIST_ITEMS.map((item) => (
                 <label key={item.key} className="flex items-center gap-2 text-sm">
                   <Checkbox name={item.key} defaultChecked={checklist?.[item.key]} />
@@ -191,17 +192,6 @@ export function EntryForm({
                 </label>
               ))}
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="assumptionsNoted">Assumptions the AI made (optional)</Label>
-            <Textarea
-              id="assumptionsNoted"
-              name="assumptionsNoted"
-              rows={3}
-              defaultValue={defaultValues.assumptionsNoted ?? ""}
-              placeholder="Any factual or legal assumptions in the AI output, and whether you verified, revised, or removed them"
-            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -227,35 +217,50 @@ export function EntryForm({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="deliveredToClientAt">Delivered to client at (optional)</Label>
-            <Input
-              type="datetime-local"
-              id="deliveredToClientAt"
-              name="deliveredToClientAt"
-              defaultValue={defaultValues.deliveredToClientAt ?? ""}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="outcome">Outcome</Label>
+              <Select name="outcome" required defaultValue={defaultValues.outcome}>
+                <SelectTrigger id="outcome" className="w-full">
+                  <SelectValue placeholder="Select outcome" />
+                </SelectTrigger>
+                <SelectContent>
+                  {verificationOutcomeValues.map((outcome) => (
+                    <SelectItem key={outcome} value={outcome}>
+                      {outcome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="deliveredToClientAt">Delivered to client at (optional)</Label>
+              <Input
+                type="datetime-local"
+                id="deliveredToClientAt"
+                name="deliveredToClientAt"
+                defaultValue={defaultValues.deliveredToClientAt ?? ""}
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="outcome">Outcome</Label>
-            <Select name="outcome" required defaultValue={defaultValues.outcome}>
-              <SelectTrigger id="outcome" className="w-full">
-                <SelectValue placeholder="Select outcome" />
-              </SelectTrigger>
-              <SelectContent>
-                {verificationOutcomeValues.map((outcome) => (
-                  <SelectItem key={outcome} value={outcome}>
-                    {outcome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="assumptionsNoted">Assumptions the AI made (optional)</Label>
+              <Textarea
+                id="assumptionsNoted"
+                name="assumptionsNoted"
+                rows={3}
+                defaultValue={defaultValues.assumptionsNoted ?? ""}
+                placeholder="Any factual/legal assumptions in the AI output, and whether you verified, revised, or removed them"
+              />
+            </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="flagReason">Flag reason (required if outcome is &quot;flagged&quot;)</Label>
-            <Textarea id="flagReason" name="flagReason" rows={3} defaultValue={defaultValues.flagReason ?? ""} />
+            <div className="space-y-1.5">
+              <Label htmlFor="flagReason">Flag reason (required if outcome is &quot;flagged&quot;)</Label>
+              <Textarea id="flagReason" name="flagReason" rows={3} defaultValue={defaultValues.flagReason ?? ""} />
+            </div>
           </div>
 
           <Button type="submit">{submitLabel}</Button>

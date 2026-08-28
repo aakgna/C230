@@ -88,7 +88,7 @@ export async function decideSubmission(formData: FormData) {
       .where(eq(schema.verificationSubmissions.id, submission.id));
 
     revalidatePath("/verification/pending");
-    redirect(`/verification/${entry.id}`);
+    redirect(`/verification/${entry.id}?approved=1`);
   }
 
   await db
@@ -103,7 +103,7 @@ export async function decideSubmission(formData: FormData) {
     .where(eq(schema.verificationSubmissions.id, submission.id));
 
   revalidatePath("/verification/pending");
-  redirect("/verification/pending");
+  redirect("/verification/pending?rejected=1");
 }
 
 /**
@@ -161,5 +161,5 @@ export async function resubmitVerificationEntry(formData: FormData) {
   }
 
   revalidatePath("/verification/pending");
-  redirect(`/verification/pending/${submissionId}`);
+  redirect(`/verification/pending/${submissionId}?resubmitted=1`);
 }

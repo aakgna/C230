@@ -43,7 +43,7 @@ export default async function NewVerificationEntryPage(props: PageProps<"/verifi
   const statusBanner = matchedTool ? STATUS_BANNER[matchedTool.status] : undefined;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Log a review</h1>
         <p className="text-sm text-muted-foreground">

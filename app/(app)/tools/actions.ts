@@ -49,14 +49,18 @@ export async function addCustomTool(formData: FormData) {
   });
 
   const db = getDb();
-  await db.insert(schema.aiToolRegister).values({
-    firmId: ctx.firmId,
-    toolName: parsed.toolName,
-    vettingNotes: parsed.vettingNotes ?? null,
-    domains: parseDomainsInput(parsed.domains),
-    status: "under_review",
-    updatedBy: ctx.userId,
-  });
+  const [tool] = await db
+    .insert(schema.aiToolRegister)
+    .values({
+      firmId: ctx.firmId,
+      toolName: parsed.toolName,
+      vettingNotes: parsed.vettingNotes ?? null,
+      domains: parseDomainsInput(parsed.domains),
+      status: "under_review",
+      updatedBy: ctx.userId,
+    })
+    .returning({ id: schema.aiToolRegister.id });
 
   revalidatePath("/tools");
+  redirect(`/tools?created=${tool.id}`);
 }

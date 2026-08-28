@@ -11,10 +11,11 @@ import { Button } from "@/components/ui/button";
 import { CheckIcon, XIcon } from "lucide-react";
 import { EntryForm, toDatetimeLocal } from "../../entry-form";
 import { decideSubmission, resubmitVerificationEntry } from "../actions";
+import { ActionToast } from "@/components/action-toast";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  pending: "secondary",
-  approved: "default",
+const STATUS_VARIANT: Record<string, "info" | "success" | "destructive"> = {
+  pending: "info",
+  approved: "success",
   rejected: "destructive",
 };
 
@@ -78,6 +79,18 @@ export default async function PendingSubmissionDetailPage(props: PageProps<"/ver
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      <ActionToast
+        outcomes={[
+          {
+            param: "submitted",
+            message: "Submitted",
+            description: "Waiting on an independent reviewer.",
+            tone: "info",
+            celebrate: true,
+          },
+          { param: "resubmitted", message: "Resubmitted", description: "Back in the review queue.", tone: "info" },
+        ]}
+      />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Submission review</h1>
         <Badge variant={STATUS_VARIANT[submission.status] ?? "secondary"}>{submission.status}</Badge>

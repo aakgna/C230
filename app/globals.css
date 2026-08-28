@@ -27,6 +27,10 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -64,6 +68,13 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  /* Bring some of the marketing site's "regulatory ledger" palette into the app, as
+     semantic accents rather than a reskin — see app/globals.css's .c230-marketing block
+     for the source hues (c230-ledger #2f5d50, c230-citation #3a5a8c). */
+  --success: oklch(0.44 0.056 173);
+  --success-foreground: oklch(0.985 0 0);
+  --info: oklch(0.467 0.09 259);
+  --info-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -99,6 +110,10 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  --success: oklch(0.75 0.11 172);
+  --success-foreground: oklch(0.145 0 0);
+  --info: oklch(0.75 0.11 259);
+  --info-foreground: oklch(0.145 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
@@ -185,7 +200,7 @@
 @keyframes row-settle-in {
   from {
     opacity: 0;
-    transform: translateY(-2px);
+    transform: translateY(-6px);
   }
   to {
     opacity: 1;
@@ -194,12 +209,89 @@
 }
 
 .animate-row-settle {
-  animation: row-settle-in 0.3s ease-out both;
+  animation: row-settle-in 0.35s ease-out both;
+}
+
+/* A pulsing ring that fades to nothing — used alongside (not instead of) the soft
+   bg-success/bg-info tint on a just-created/just-finished row or card, since the tint alone
+   (a flat 10-15% opacity fill) reads as too subtle to notice at a glance. box-shadow, not
+   background-color, so it animates identically in both themes without any color-space math. */
+@keyframes glow-fade {
+  0% {
+    box-shadow: 0 0 0 4px var(--glow-color, var(--success));
+  }
+  100% {
+    box-shadow: 0 0 0 0px transparent;
+  }
+}
+
+.animate-glow-fade {
+  animation: glow-fade 1.8s ease-out both;
+}
+
+/* A real "moment" — used sparingly, only for the handful of actions genuinely worth rewarding
+   (see components/celebration.tsx): the badge pops in with an overshoot bounce while small
+   confetti particles fly outward from behind it. Each particle's direction/distance/rotation is
+   set per-instance via the --dx/--dy/--rot custom properties on the element itself, not here. */
+@keyframes celebrate-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-6deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.12) rotate(3deg);
+  }
+  75% {
+    transform: scale(0.96) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-celebrate-pop {
+  animation: celebrate-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes confetti-particle {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-particle {
+  animation: confetti-particle 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-celebrate-pop,
+  .animate-confetti-particle {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* `animation` is a shorthand — stacking .animate-row-settle and .animate-glow-fade as two
+   separate classes on one element does NOT run both (the later rule just overwrites the
+   property). Use this combined class instead whenever an entrance needs the glow on top. */
+.animate-row-settle-glow {
+  animation:
+    row-settle-in 0.35s ease-out both,
+    glow-fade 1.8s ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-check-pop,
-  .animate-row-settle {
+  .animate-row-settle,
+  .animate-row-settle-glow,
+  .animate-glow-fade {
     animation: none;
   }
 }

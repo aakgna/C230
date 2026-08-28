@@ -100,7 +100,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
+        <Card className="animate-row-settle" style={{ animationDelay: "0ms" }}>
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">AI Tool Register</CardTitle>
           </CardHeader>
@@ -109,19 +109,19 @@ export default async function DashboardPage() {
               centerLabel={String(tools.length)}
               centerSublabel="tools"
               segments={[
-                { value: toolCounts.approved ?? 0, className: "stroke-foreground" },
+                { value: toolCounts.approved ?? 0, className: "stroke-success" },
                 { value: toolCounts.under_review ?? 0, className: "stroke-muted-foreground" },
                 { value: toolCounts.prohibited ?? 0, className: "stroke-destructive" },
               ]}
             />
             <div className="flex flex-col gap-2">
-              <Badge>{toolCounts.approved ?? 0} approved</Badge>
+              <Badge variant="success">{toolCounts.approved ?? 0} approved</Badge>
               <Badge variant="secondary">{toolCounts.under_review ?? 0} under review</Badge>
               <Badge variant="destructive">{toolCounts.prohibited ?? 0} prohibited</Badge>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="animate-row-settle" style={{ animationDelay: "60ms" }}>
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Training Completion</CardTitle>
           </CardHeader>
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="animate-row-settle" style={{ animationDelay: "120ms" }}>
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Review Latency Signal</CardTitle>
           </CardHeader>
@@ -171,11 +171,12 @@ export default async function DashboardPage() {
               color + accent border, not a text verdict — see attention-flags.ts for why it's an
               urgency-of-follow-up signal, not a compliance rating. */}
           <div className="divide-y rounded-lg border">
-            {attentionFlags.map((flag) => (
+            {attentionFlags.map((flag, i) => (
               <Link
                 key={flag.id}
                 href={flag.href}
-                className={`flex items-start gap-3 border-l-2 px-4 py-3 text-sm hover:bg-muted/50 ${
+                style={{ animationDelay: `${180 + i * 40}ms` }}
+                className={`animate-row-settle flex items-start gap-3 border-l-2 px-4 py-3 text-sm hover:bg-muted/50 ${
                   flag.severity === "elevated" ? "border-l-destructive" : "border-l-transparent"
                 }`}
               >
@@ -198,7 +199,7 @@ export default async function DashboardPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
+        <Card className="animate-row-settle" style={{ animationDelay: "220ms" }}>
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Training completion by staff</CardTitle>
           </CardHeader>
@@ -210,7 +211,7 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="animate-row-settle" style={{ animationDelay: "260ms" }}>
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Verification entries by task category</CardTitle>
           </CardHeader>

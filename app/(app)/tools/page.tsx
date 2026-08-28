@@ -8,16 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { ActionToast } from "@/components/action-toast";
+import { cn } from "@/lib/utils";
 import { addCustomTool } from "./actions";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  approved: "default",
+const STATUS_VARIANT: Record<string, "success" | "secondary" | "destructive"> = {
+  approved: "success",
   under_review: "secondary",
   prohibited: "destructive",
 };
 
-export default async function ToolsPage() {
+export default async function ToolsPage(props: PageProps<"/tools">) {
   const ctx = await requireFirmContext();
+  const searchParams = await props.searchParams;
   const db = getDb();
 
   const tools = await db
@@ -26,8 +29,11 @@ export default async function ToolsPage() {
     .where(eq(schema.aiToolRegister.firmId, ctx.firmId))
     .orderBy(desc(schema.aiToolRegister.updatedAt));
 
+  const createdId = typeof searchParams.created === "string" ? searchParams.created : undefined;
+
   return (
     <div className="space-y-8">
+      <ActionToast outcomes={[{ param: "created", message: "Tool added to the register", tone: "success" }]} />
       <div>
         <h1 className="text-2xl font-semibold">AI Tool Register</h1>
         <p className="text-sm text-muted-foreground">
@@ -49,8 +55,14 @@ export default async function ToolsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tools.map((tool) => (
-                <TableRow key={tool.id}>
+              {tools.map((tool, i) => (
+                <TableRow
+                  key={tool.id}
+                  style={{ animationDelay: `${i * 40}ms` }}
+                  className={cn(
+                    tool.id === createdId ? "animate-row-settle-glow bg-success/15 hover:bg-success/20" : "animate-row-settle"
+                  )}
+                >
                   <TableCell className="font-medium">{tool.toolName}</TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[tool.status] ?? "secondary"}>{tool.status.replace("_", " ")}</Badge>

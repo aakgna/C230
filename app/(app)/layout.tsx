@@ -44,7 +44,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex flex-1 flex-col">
       <header className="flex items-center justify-between border-b px-6 py-3">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="font-semibold">
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+            <span className="flex size-6 items-center justify-center rounded-[4px] border border-info/40 font-mono text-[9px] font-medium text-info">
+              §230
+            </span>
             Circular 230 Kit
           </Link>
           <nav className="flex gap-4 text-sm text-muted-foreground">
