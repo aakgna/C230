@@ -21,6 +21,7 @@ type EntryFormDefaultValues = {
   taskCategory?: string;
   evidenceLocation?: string;
   documentReference?: string;
+  assignToId?: string;
   checklistItemsReviewed?: ChecklistItemsReviewed;
   assumptionsNoted?: string;
   aiOutputGeneratedAt: string;
@@ -39,6 +40,7 @@ export function EntryForm({
   action,
   users,
   tools,
+  eligibleReviewers,
   defaultValues,
   submissionId,
   submitLabel = "Submit for review",
@@ -47,6 +49,9 @@ export function EntryForm({
   action: (formData: FormData) => void | Promise<void>;
   users: Array<{ id: string; fullName: string | null; email: string }>;
   tools: Array<{ id: string; toolName: string; status: string }>;
+  // Whoever's one review level above the submitter — empty means the submitter is already the
+  // firm's top level, so no "assign to" field is shown at all (see lib/verification/review-chain.ts).
+  eligibleReviewers: Array<{ id: string; fullName: string | null; email: string; reviewLevel: number }>;
   defaultValues: EntryFormDefaultValues;
   submissionId?: string;
   submitLabel?: string;
@@ -196,6 +201,35 @@ export function EntryForm({
               </Select>
             </div>
           </div>
+
+          {eligibleReviewers.length > 0 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="assignToId">Assign to</Label>
+              <Select
+                name="assignToId"
+                required
+                defaultValue={defaultValues.assignToId}
+                items={eligibleReviewers.map((r) => ({
+                  value: r.id,
+                  label: `${r.fullName ?? r.email} (Level ${r.reviewLevel})`,
+                }))}
+              >
+                <SelectTrigger id="assignToId" className="w-full">
+                  <SelectValue placeholder="Select reviewer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {eligibleReviewers.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.fullName ?? r.email} (Level {r.reviewLevel})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Next in the review chain. They&apos;ll see this in their &quot;Needs your review&quot; list.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Checklist reviewed</Label>

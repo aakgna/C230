@@ -4,7 +4,7 @@ import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { appRoleValues } from "@/lib/validation/schemas";
@@ -93,11 +93,22 @@ export default async function EditMemberPage(props: PageProps<"/settings/members
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox id="isLogReviewer" name="isLogReviewer" defaultChecked={target.isLogReviewer} />
-              <Label htmlFor="isLogReviewer" className="font-normal">
-                Can review and approve verification-log submissions
-              </Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="reviewLevel">Review level</Label>
+              <Input
+                id="reviewLevel"
+                name="reviewLevel"
+                type="number"
+                min={1}
+                required
+                defaultValue={target.reviewLevel}
+                className="max-w-24"
+              />
+              <p className="text-xs text-muted-foreground">
+                A submission climbs one level at a time. Level 1 can only submit — this person needs level 2 or
+                higher to be assigned as a reviewer. Whoever currently holds the firm&apos;s highest level gives the
+                final approval.
+              </p>
             </div>
 
             <Button type="submit">Save</Button>

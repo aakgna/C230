@@ -19,8 +19,18 @@ export function requireOwner(ctx: FirmContext, action: string) {
   }
 }
 
-export function requireLogReviewer(ctx: FirmContext, action: string) {
-  if (!ctx.isLogReviewer) {
+/**
+ * Only whoever the submission is currently assigned to may act on it — not "any qualified
+ * reviewer at this level or above," since the whole point of the chain is that it's someone's
+ * specific turn. Assignment itself (getEligibleNextReviewers in lib/verification/review-chain.ts)
+ * is what enforces who's eligible to receive an assignment in the first place.
+ */
+export function requireCurrentAssignee(
+  ctx: FirmContext,
+  submission: { currentAssigneeId: string },
+  action: string
+) {
+  if (ctx.userId !== submission.currentAssigneeId) {
     throw new ForbiddenError(action);
   }
 }

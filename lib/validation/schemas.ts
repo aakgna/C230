@@ -62,6 +62,11 @@ export const createVerificationEntrySchema = z
     clientReference: z.string().trim().max(300).optional(),
     evidenceLocation: z.string().trim().max(2000).optional(),
     documentReference: z.string().trim().max(300).optional(),
+    // Who to send this to next in the review chain — absent only when the submitter is
+    // already the firm's top review level (see lib/verification/review-chain.ts). Required-ness
+    // beyond "valid uuid if present" is enforced by the action, which knows whether the
+    // submitter actually has anyone above them; zod alone can't know that.
+    assignToId: z.uuid().optional(),
     checklistItemsReviewed: z.object(
       Object.fromEntries(CHECKLIST_ITEMS.map((item) => [item.key, z.boolean()])) as Record<
         (typeof CHECKLIST_ITEMS)[number]["key"],
@@ -89,17 +94,25 @@ export const createVerificationEntrySchema = z
     path: ["deliveredToClientAt"],
   });
 
-export const decisionValues = ["approved", "rejected"] as const;
+// "forward" = mid-chain approve-and-send-up-one-level; "approved" = the terminal, top-of-chain
+// approval that creates the permanent verification_log entry; "rejected" = sent back to the
+// original submitter, available at any level.
+export const decisionValues = ["forward", "approved", "rejected"] as const;
 
 export const decideSubmissionSchema = z
   .object({
     submissionId: z.uuid(),
     decision: z.enum(decisionValues),
     decisionNotes: z.string().trim().max(4000).optional(),
+    nextAssigneeId: z.uuid().optional(),
   })
   .refine((data) => data.decision !== "rejected" || !!data.decisionNotes, {
     message: "Notes are required when rejecting a submission",
     path: ["decisionNotes"],
+  })
+  .refine((data) => data.decision !== "forward" || !!data.nextAssigneeId, {
+    message: "Select who to forward this to",
+    path: ["nextAssigneeId"],
   });
 
 export const appRoleValues = ["firm_admin", "practitioner"] as const;
@@ -107,7 +120,7 @@ export const appRoleValues = ["firm_admin", "practitioner"] as const;
 export const updateMemberSchema = z.object({
   userId: z.uuid(),
   appRole: z.enum(appRoleValues),
-  isLogReviewer: z.boolean(),
+  reviewLevel: z.coerce.number().int().min(1),
 });
 
 export const transferOwnershipSchema = z.object({

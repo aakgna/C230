@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
 import { findToolByDomain } from "@/lib/tools/match-domain";
+import { getEligibleNextReviewers } from "@/lib/verification/review-chain";
 import { EntryForm, toDatetimeLocal } from "../entry-form";
 import { submitVerificationEntry } from "../actions";
 
@@ -20,9 +21,10 @@ export default async function NewVerificationEntryPage(props: PageProps<"/verifi
   const searchParams = await props.searchParams;
   const db = getDb();
 
-  const [users, tools] = await Promise.all([
+  const [users, tools, eligibleReviewers] = await Promise.all([
     db.select().from(schema.users).where(eq(schema.users.firmId, ctx.firmId)),
     db.select().from(schema.aiToolRegister).where(eq(schema.aiToolRegister.firmId, ctx.firmId)),
+    getEligibleNextReviewers(db, ctx.firmId, ctx.reviewLevel, [ctx.userId]),
   ]);
 
   const now = toDatetimeLocal(new Date());
@@ -68,6 +70,7 @@ export default async function NewVerificationEntryPage(props: PageProps<"/verifi
         action={submitVerificationEntry}
         users={users}
         tools={tools}
+        eligibleReviewers={eligibleReviewers}
         defaultValues={{
           practitionerId: ctx.userId,
           aiToolId: matchedTool?.id,

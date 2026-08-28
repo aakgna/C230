@@ -147,6 +147,14 @@ export const verificationSubmissions = pgTable(
       .notNull()
       .references(() => users.id),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+    // Whoever needs to act right now — a mid-chain reviewer one level up, or back to
+    // submittedBy after a rejection at any level. Only meaningful while status='pending';
+    // decidedBy/decidedAt/decisionNotes below are reserved for the terminal action (the
+    // top-of-chain approval, or a rejection), not every intermediate forward — see
+    // verificationSubmissionReviews for the full per-hop history.
+    currentAssigneeId: uuid("current_assignee_id")
+      .notNull()
+      .references(() => users.id),
     decidedBy: uuid("decided_by").references(() => users.id),
     decidedAt: timestamp("decided_at", { withTimezone: true }),
     decisionNotes: text("decision_notes"),
@@ -187,5 +195,41 @@ export const verificationSubmissions = pgTable(
       "submission_decider_independent",
       sql`${table.decidedBy} IS NULL OR (${table.decidedBy} <> ${table.submittedBy} AND ${table.decidedBy} <> ${table.practitionerId})`
     ),
+    // Same independence guarantee, but for whoever's currently holding the submission — only
+    // while it's actively climbing the chain (status='pending'). Once rejected, currentAssigneeId
+    // is *intentionally* submittedBy (that's the real "sent back to the submitter" state), so the
+    // constraint deliberately doesn't apply there. Application code
+    // (getEligibleNextReviewers excluding the submitter/practitioner) is the primary
+    // enforcement; this is defense-in-depth.
+    check(
+      "submission_assignee_independent_while_pending",
+      sql`${table.status} <> 'pending' OR (${table.currentAssigneeId} <> ${table.submittedBy} AND ${table.currentAssigneeId} <> ${table.practitionerId})`
+    ),
   ]
 );
+
+// One row per hop in a submission's review chain — a mid-chain approve-and-forward, the final
+// top-of-chain approval, or a rejection. verificationSubmissions.decidedBy/decidedAt/
+// decisionNotes only ever reflect the terminal action, so without this table an intermediate
+// reviewer's notes would be silently overwritten by whoever acts next. Not append-only at the
+// DB level (no trigger) — unlike verification_log, this is workflow history, not the
+// tamper-evident record itself.
+export const reviewStepActionEnum = pgEnum("review_step_action", ["forwarded", "approved", "rejected"]);
+
+export const verificationSubmissionReviews = pgTable("verification_submission_reviews", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  submissionId: uuid("submission_id")
+    .notNull()
+    .references(() => verificationSubmissions.id),
+  reviewerId: uuid("reviewer_id")
+    .notNull()
+    .references(() => users.id),
+  // Snapshot at the time of this action, not a live join to users.reviewLevel — stays
+  // historically accurate even if this person's level changes later.
+  reviewerLevel: integer("reviewer_level").notNull(),
+  action: reviewStepActionEnum("action").notNull(),
+  notes: text("notes"),
+  // Set only when action = 'forwarded'.
+  forwardedToId: uuid("forwarded_to_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

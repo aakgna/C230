@@ -11,7 +11,7 @@ export type FirmContext = {
   clerkOrgId: string;
   appRole: "firm_admin" | "practitioner";
   isOwner: boolean; // firm.ownerId === user.id — the sole power to demote a firm_admin
-  isLogReviewer: boolean; // independent of appRole — see lib/db/schema/firms.ts
+  reviewLevel: number; // position in the review chain of command — see lib/db/schema/firms.ts
 };
 
 export type FirmContextResult = { ok: true; ctx: FirmContext } | { ok: false; status: number; message: string };
@@ -72,7 +72,7 @@ async function resolveFirmContext(clerkUserId: string | null, clerkOrgId: string
       clerkOrgId,
       appRole: user.appRole,
       isOwner: firm.ownerId === user.id,
-      isLogReviewer: user.isLogReviewer,
+      reviewLevel: user.reviewLevel,
     },
   };
 }

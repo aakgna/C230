@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, pgEnum, boolean, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, pgEnum, boolean, integer, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 export const appRoleEnum = pgEnum("app_role", ["firm_admin", "practitioner"]);
 
@@ -33,11 +33,14 @@ export const users = pgTable("users", {
   fullName: text("full_name"),
   title: text("title"),
   appRole: appRoleEnum("app_role").notNull().default("practitioner"),
-  // Orthogonal to appRole — an admin can also be a reviewer, a practitioner can be one
-  // without becoming admin. Assignable by any firm_admin/owner. The owner does NOT get an
-  // automatic bypass on this flag (deliberate, not an oversight — consistent with reviewer
-  // capability being "independent of admin status").
-  isLogReviewer: boolean("is_log_reviewer").notNull().default(false),
+  // Position in the firm's review chain of command — orthogonal to appRole, same reasoning
+  // isLogReviewer used to have (an admin can also be a reviewer, a practitioner can be one
+  // without becoming admin; a firm's approval hierarchy doesn't have to match its
+  // software-permission hierarchy). Level 1 = can only submit. A submission climbs one level
+  // at a time (see lib/verification/review-chain.ts) until it reaches whoever currently holds
+  // the firm's highest level, whose approval is what finally creates the permanent entry.
+  // "Highest level" is computed dynamically (MAX(reviewLevel) per firm), never hardcoded.
+  reviewLevel: integer("review_level").notNull().default(1),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

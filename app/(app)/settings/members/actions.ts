@@ -16,7 +16,7 @@ export async function updateMember(formData: FormData) {
   const parsed = updateMemberSchema.parse({
     userId: formData.get("userId"),
     appRole: formData.get("appRole"),
-    isLogReviewer: formData.get("isLogReviewer") !== null,
+    reviewLevel: formData.get("reviewLevel"),
   });
 
   const db = getDb();
@@ -37,8 +37,8 @@ export async function updateMember(formData: FormData) {
 
   const isTargetOwner = target.id === firm.ownerId;
 
-  // Only re-check the promotion/demotion hierarchy if the role is actually changing — toggling
-  // just the reviewer flag doesn't need it (any admin/owner can do that, per requireFirmAdmin
+  // Only re-check the promotion/demotion hierarchy if the role is actually changing — changing
+  // just the review level doesn't need it (any admin/owner can do that, per requireFirmAdmin
   // above already gating this whole action).
   if (parsed.appRole !== target.appRole) {
     requireCanSetRole(ctx, { appRole: target.appRole, isTargetOwner }, parsed.appRole, "change member role");
@@ -46,7 +46,7 @@ export async function updateMember(formData: FormData) {
 
   await db
     .update(schema.users)
-    .set({ appRole: parsed.appRole, isLogReviewer: parsed.isLogReviewer })
+    .set({ appRole: parsed.appRole, reviewLevel: parsed.reviewLevel })
     .where(and(eq(schema.users.id, parsed.userId), eq(schema.users.firmId, ctx.firmId)));
 
   revalidatePath("/settings/members");

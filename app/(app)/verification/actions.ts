@@ -3,12 +3,14 @@
 import { redirect } from "next/navigation";
 import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
+import { getEligibleNextReviewers } from "@/lib/verification/review-chain";
 import { parseVerificationEntryFormData, verifyPractitionerAndTool } from "./entry-helpers";
 
 /**
  * Opens a verification-log "PR": writes a pending submission, not a permanent entry. It only
- * enters the tamper-evident hash chain once an independent reviewer approves it — see
- * app/(app)/verification/pending/actions.ts's decideSubmission().
+ * enters the tamper-evident hash chain once it climbs the review chain to whoever currently
+ * holds the firm's top review level — see app/(app)/verification/pending/actions.ts's
+ * decideSubmission().
  */
 export async function submitVerificationEntry(formData: FormData) {
   const ctx = await requireFirmContext();
@@ -16,6 +18,22 @@ export async function submitVerificationEntry(formData: FormData) {
   const db = getDb();
 
   await verifyPractitionerAndTool(db, ctx.firmId, parsed.practitionerId, parsed.aiToolId);
+
+  const eligibleReviewers = await getEligibleNextReviewers(db, ctx.firmId, ctx.reviewLevel, [
+    ctx.userId,
+    parsed.practitionerId,
+  ]);
+
+  if (eligibleReviewers.length === 0) {
+    throw new Error(
+      "No one is available to review this — you're already at the firm's top review level, or nobody else qualifies. Ask a firm admin to check review levels under Settings > Members."
+    );
+  }
+
+  const assignee = eligibleReviewers.find((r) => r.id === parsed.assignToId);
+  if (!assignee) {
+    throw new Error("Select who to send this to for review");
+  }
 
   const [submission] = await db
     .insert(schema.verificationSubmissions)
@@ -37,6 +55,7 @@ export async function submitVerificationEntry(formData: FormData) {
       reviewerRole: parsed.reviewerRole,
       status: "pending",
       submittedBy: ctx.userId,
+      currentAssigneeId: assignee.id,
     })
     .returning();
 

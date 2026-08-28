@@ -64,6 +64,20 @@
       "when": 1787881700534,
       "tag": "0008_gigantic_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787883318140,
+      "tag": "0009_volatile_arachne",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787883504662,
+      "tag": "0010_real_fixer",
+      "breakpoints": true
     }
   ]
 }

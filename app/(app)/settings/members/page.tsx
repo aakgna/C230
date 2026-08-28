@@ -26,8 +26,9 @@ export default async function MembersPage() {
       <div>
         <h1 className="text-2xl font-semibold">Members</h1>
         <p className="text-sm text-muted-foreground">
-          Roles and log-reviewer status for everyone at your firm. A reviewer must be someone other than the
-          submitter to approve a verification-log entry.
+          Roles and review level for everyone at your firm. A verification-log entry climbs one review level at a
+          time until it reaches whoever holds the highest level — that approval is what makes it permanent.
+          Level 1 can only submit; higher levels can be assigned to review.
         </p>
       </div>
 
@@ -36,7 +37,7 @@ export default async function MembersPage() {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Role</TableHead>
-            <TableHead>Log reviewer</TableHead>
+            <TableHead>Review level</TableHead>
             {canManage && <TableHead />}
           </TableRow>
         </TableHeader>
@@ -54,7 +55,7 @@ export default async function MembersPage() {
                 </div>
               </TableCell>
               <TableCell>
-                {member.isLogReviewer ? <Badge>Log reviewer</Badge> : <span className="text-muted-foreground">—</span>}
+                <Badge variant="outline">Level {member.reviewLevel}</Badge>
               </TableCell>
               {canManage && (
                 <TableCell className="text-right">
