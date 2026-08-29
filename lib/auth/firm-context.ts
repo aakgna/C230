@@ -1,7 +1,7 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 
 export type FirmContext = {
@@ -50,7 +50,14 @@ async function resolveFirmContext(clerkUserId: string | null, clerkOrgId: string
   for (let attempt = 0; attempt < SYNC_RETRY_ATTEMPTS; attempt++) {
     [firm] = await db.select().from(schema.firms).where(eq(schema.firms.clerkOrgId, clerkOrgId)).limit(1);
     if (firm) {
-      [user] = await db.select().from(schema.users).where(eq(schema.users.clerkUserId, clerkUserId)).limit(1);
+      // Scoped by firmId, not just clerkUserId — the same Clerk identity can have a row in more
+      // than one firm (see lib/db/schema/firms.ts), so this must resolve the membership for the
+      // org the session is currently active in, not just "some row for this person, anywhere."
+      [user] = await db
+        .select()
+        .from(schema.users)
+        .where(and(eq(schema.users.clerkUserId, clerkUserId), eq(schema.users.firmId, firm.id)))
+        .limit(1);
     }
     if (firm && user) {
       break;

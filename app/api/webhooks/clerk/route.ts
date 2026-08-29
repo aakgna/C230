@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { computeGenesisHash } from "@/lib/verification/hash-chain";
 
@@ -80,12 +80,19 @@ export async function POST(request: NextRequest) {
           fullName,
           appRole: membership.role === "org:admin" ? "firm_admin" : "practitioner",
         })
-        .onConflictDoNothing({ target: schema.users.clerkUserId });
+        // Composite target, not just clerkUserId — this person may already have a row under a
+        // different firm (see lib/db/schema/firms.ts); only a redelivery of *this* firm's
+        // membership event should be a no-op, not a first-time join to a second firm.
+        .onConflictDoNothing({ target: [schema.users.firmId, schema.users.clerkUserId] });
 
       // Resolve firm ownership now that this user's row is guaranteed to exist (either just
       // inserted, or already there on a webhook redelivery).
       if (!firm.ownerId) {
-        const [user] = await db.select().from(schema.users).where(eq(schema.users.clerkUserId, clerkUserId)).limit(1);
+        const [user] = await db
+          .select()
+          .from(schema.users)
+          .where(and(eq(schema.users.clerkUserId, clerkUserId), eq(schema.users.firmId, firm.id)))
+          .limit(1);
 
         if (user) {
           if (firm.pendingOwnerClerkUserId === clerkUserId) {

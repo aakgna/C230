@@ -78,6 +78,13 @@
       "when": 1787883504662,
       "tag": "0010_real_fixer",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787978489524,
+      "tag": "0011_woozy_bloodstrike",
+      "breakpoints": true
     }
   ]
 }
