@@ -63,8 +63,15 @@ export async function POST(request: NextRequest) {
 
       const [firm] = await db.select().from(schema.firms).where(eq(schema.firms.clerkOrgId, clerkOrgId)).limit(1);
       if (!firm) {
-        console.error(`organizationMembership.created for unknown org ${clerkOrgId}; organization.created may not have been processed yet`);
-        break;
+        // Svix delivers organization.created and organizationMembership.created with no
+        // ordering guarantee and near-zero delay between them, so this can legitimately race
+        // ahead of the firm's own insert landing — especially on a brand-new signup, where
+        // both fire back-to-back. A 200 here would tell Svix this delivery succeeded and it
+        // would never retry, silently dropping the membership forever. Returning non-2xx makes
+        // Svix retry with backoff instead, by which point organization.created has long since
+        // committed.
+        console.error(`organizationMembership.created for unknown org ${clerkOrgId}; will retry`);
+        return new Response("Firm not yet synced", { status: 409 });
       }
 
       const fullName = [membership.public_user_data.first_name, membership.public_user_data.last_name]
