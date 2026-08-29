@@ -11,7 +11,12 @@ import { appendVerificationEntry } from "@/lib/verification/hash-chain";
 import { getEligibleNextReviewers } from "@/lib/verification/review-chain";
 import type { ChecklistItemsReviewed } from "@/lib/verification/checklist-definitions";
 import { decideSubmissionSchema } from "@/lib/validation/schemas";
-import { parseVerificationEntryFormData, verifyPractitionerAndTool } from "../entry-helpers";
+import {
+  parseVerificationEntryFormData,
+  verifyPractitionerAndTool,
+  toActionErrorState,
+  type EntryFormState,
+} from "../entry-helpers";
 
 /**
  * Acts on a submission currently assigned to the caller: forward it up one review level,
@@ -189,18 +194,26 @@ export async function decideSubmission(formData: FormData) {
  * submission — their own review level hasn't changed, so this is the same eligible-reviewers
  * lookup either way.
  */
-export async function resubmitVerificationEntry(formData: FormData) {
+export async function resubmitVerificationEntry(
+  _prevState: EntryFormState,
+  formData: FormData
+): Promise<EntryFormState> {
   const ctx = await requireFirmContext();
 
   const submissionId = formData.get("submissionId");
   if (typeof submissionId !== "string") {
-    throw new Error("Missing submissionId");
+    return { message: "Missing submissionId" };
   }
 
-  const parsed = parseVerificationEntryFormData(formData);
   const db = getDb();
 
-  await verifyPractitionerAndTool(db, ctx.firmId, parsed.practitionerId, parsed.aiToolId);
+  let parsed;
+  try {
+    parsed = parseVerificationEntryFormData(formData);
+    await verifyPractitionerAndTool(db, ctx.firmId, parsed.practitionerId, parsed.aiToolId);
+  } catch (error) {
+    return toActionErrorState(error);
+  }
 
   const eligibleReviewers = await getEligibleNextReviewers(db, ctx.firmId, ctx.reviewLevel, [
     ctx.userId,
@@ -208,7 +221,7 @@ export async function resubmitVerificationEntry(formData: FormData) {
   ]);
   const assignee = eligibleReviewers.find((r) => r.id === parsed.assignToId);
   if (!assignee) {
-    throw new Error("Select who to send this to for review");
+    return { message: "Select who to send this to for review", field: "assignToId" };
   }
 
   const result = await db
@@ -246,7 +259,7 @@ export async function resubmitVerificationEntry(formData: FormData) {
     .returning({ id: schema.verificationSubmissions.id });
 
   if (result.length === 0) {
-    throw new Error("Submission not found, not yours, or not rejected");
+    return { message: "Submission not found, not yours, or not rejected" };
   }
 
   revalidatePath("/verification/pending");

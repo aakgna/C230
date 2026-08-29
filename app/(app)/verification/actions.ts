@@ -4,20 +4,36 @@ import { redirect } from "next/navigation";
 import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
 import { getEligibleNextReviewers } from "@/lib/verification/review-chain";
-import { parseVerificationEntryFormData, verifyPractitionerAndTool } from "./entry-helpers";
+import {
+  parseVerificationEntryFormData,
+  verifyPractitionerAndTool,
+  toActionErrorState,
+  type EntryFormState,
+} from "./entry-helpers";
 
 /**
  * Opens a verification-log "PR": writes a pending submission, not a permanent entry. It only
  * enters the tamper-evident hash chain once it climbs the review chain to whoever currently
  * holds the firm's top review level — see app/(app)/verification/pending/actions.ts's
- * decideSubmission().
+ * decideSubmission(). Bad input (invalid dates, no eligible reviewer) is returned as state, not
+ * thrown — see toActionErrorState's comment. redirect() below is deliberately outside any
+ * try/catch: it works by throwing a special Next.js-internal signal, which a catch block here
+ * would intercept and misreport as a real error.
  */
-export async function submitVerificationEntry(formData: FormData) {
+export async function submitVerificationEntry(
+  _prevState: EntryFormState,
+  formData: FormData
+): Promise<EntryFormState> {
   const ctx = await requireFirmContext();
-  const parsed = parseVerificationEntryFormData(formData);
   const db = getDb();
 
-  await verifyPractitionerAndTool(db, ctx.firmId, parsed.practitionerId, parsed.aiToolId);
+  let parsed;
+  try {
+    parsed = parseVerificationEntryFormData(formData);
+    await verifyPractitionerAndTool(db, ctx.firmId, parsed.practitionerId, parsed.aiToolId);
+  } catch (error) {
+    return toActionErrorState(error);
+  }
 
   const eligibleReviewers = await getEligibleNextReviewers(db, ctx.firmId, ctx.reviewLevel, [
     ctx.userId,
@@ -25,14 +41,15 @@ export async function submitVerificationEntry(formData: FormData) {
   ]);
 
   if (eligibleReviewers.length === 0) {
-    throw new Error(
-      "No one is available to review this — you're already at the firm's top review level, or nobody else qualifies. Ask a firm admin to check review levels under Settings > Members."
-    );
+    return {
+      message:
+        "No one is available to review this — you're already at the firm's top review level, or nobody else qualifies. Ask a firm admin to check review levels under Settings > Members.",
+    };
   }
 
   const assignee = eligibleReviewers.find((r) => r.id === parsed.assignToId);
   if (!assignee) {
-    throw new Error("Select who to send this to for review");
+    return { message: "Select who to send this to for review", field: "assignToId" };
   }
 
   const [submission] = await db

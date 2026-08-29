@@ -1,8 +1,37 @@
 import "server-only";
+import { ZodError } from "zod";
 import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { CHECKLIST_ITEMS, type ChecklistItemsReviewed } from "@/lib/verification/checklist-definitions";
 import { createVerificationEntrySchema } from "@/lib/validation/schemas";
+
+// Passed to useActionState in entry-form.tsx (a Client Component, hence type-only import there —
+// the "server-only" guard above only fires on a runtime import, so the type erases cleanly).
+// `field` is a form field name (matches an <input>/<select> "name") when the error traces back
+// to one specific input — entry-form.tsx renders the message right under that field instead of
+// as a generic banner, so it's obvious which of the ~15 fields on this form needs fixing.
+export type EntryFormState = { message: string; field?: string } | null;
+
+/**
+ * Form submission failures (bad dates, no eligible reviewer, etc.) are expected errors, not
+ * bugs — per Next.js's own guidance they should be modeled as returned state via useActionState,
+ * not thrown, so a mistake doesn't nuke the whole filled-in form back to a generic error page.
+ * Picks the first Zod issue and its field path (already written to be human-readable, e.g.
+ * "Delivery must be at or after review completion") rather than surfacing the raw JSON-array
+ * error text. A refine()'s path is always the field named in its `path` option (see
+ * lib/validation/schemas.ts) — object-level refinements without one just get shown generically.
+ */
+export function toActionErrorState(error: unknown): EntryFormState {
+  if (error instanceof ZodError) {
+    const issue = error.issues[0];
+    if (!issue) return { message: "Some of the information provided wasn't valid." };
+    return { message: issue.message, field: typeof issue.path[0] === "string" ? issue.path[0] : undefined };
+  }
+  if (error instanceof Error) {
+    return { message: error.message };
+  }
+  return { message: "Something went wrong. Please try again." };
+}
 
 /**
  * Shared by submitVerificationEntry (verification/actions.ts) and resubmitVerificationEntry

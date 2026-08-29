@@ -1,3 +1,6 @@
+"use client";
+
+import { useActionState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CHECKLIST_ITEMS, type ChecklistItemsReviewed } from "@/lib/verification/checklist-definitions";
 import { taskCategoryValues, verificationOutcomeValues, reviewerRoleValues } from "@/lib/validation/schemas";
+import type { EntryFormState } from "./entry-helpers";
 
 export function toDatetimeLocal(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -46,7 +50,7 @@ export function EntryForm({
   submitLabel = "Submit for review",
   helperText = "This needs approval from a reviewer other than you before it becomes part of the permanent record.",
 }: {
-  action: (formData: FormData) => void | Promise<void>;
+  action: (prevState: EntryFormState, formData: FormData) => Promise<EntryFormState>;
   users: Array<{ id: string; fullName: string | null; email: string }>;
   tools: Array<{ id: string; toolName: string; status: string }>;
   // Whoever's one review level above the submitter — empty means the submitter is already the
@@ -58,6 +62,11 @@ export function EntryForm({
   helperText?: string;
 }) {
   const checklist = defaultValues.checklistItemsReviewed;
+  const [state, formAction, pending] = useActionState(action, null);
+  // Renders right under the specific input that caused it, not just as a banner at the bottom —
+  // with ~15 fields on this form, "Delivery must be at or after review completion" is much more
+  // useful sitting next to "Delivered to client at" than floating disconnected near the button.
+  const fieldError = (name: string) => (state?.field === name ? state.message : undefined);
 
   return (
     <Card>
@@ -65,7 +74,7 @@ export function EntryForm({
         <CardTitle className="text-base">Review details</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={action} className="space-y-5">
+        <form action={formAction} className="space-y-5">
           {submissionId && <input type="hidden" name="submissionId" value={submissionId} />}
 
           <div className="grid grid-cols-2 gap-4">
@@ -225,10 +234,16 @@ export function EntryForm({
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Anyone at a higher review level — not necessarily the next tier up. They&apos;ll see this in their
-                &quot;Needs your review&quot; list.
-              </p>
+              {fieldError("assignToId") ? (
+                <p className="text-xs text-destructive" role="alert">
+                  {fieldError("assignToId")}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Anyone at a higher review level — not necessarily the next tier up. They&apos;ll see this in their
+                  &quot;Needs your review&quot; list.
+                </p>
+              )}
             </div>
           )}
 
@@ -254,6 +269,11 @@ export function EntryForm({
                 defaultValue={defaultValues.aiOutputGeneratedAt}
                 required
               />
+              {fieldError("aiOutputGeneratedAt") && (
+                <p className="text-xs text-destructive" role="alert">
+                  {fieldError("aiOutputGeneratedAt")}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="reviewCompletedAt">Review completed at</Label>
@@ -264,6 +284,11 @@ export function EntryForm({
                 defaultValue={defaultValues.reviewCompletedAt}
                 required
               />
+              {fieldError("reviewCompletedAt") && (
+                <p className="text-xs text-destructive" role="alert">
+                  {fieldError("reviewCompletedAt")}
+                </p>
+              )}
             </div>
           </div>
 
@@ -292,6 +317,11 @@ export function EntryForm({
                 name="deliveredToClientAt"
                 defaultValue={defaultValues.deliveredToClientAt ?? ""}
               />
+              {fieldError("deliveredToClientAt") && (
+                <p className="text-xs text-destructive" role="alert">
+                  {fieldError("deliveredToClientAt")}
+                </p>
+              )}
             </div>
           </div>
 
@@ -310,10 +340,23 @@ export function EntryForm({
             <div className="space-y-1.5">
               <Label htmlFor="flagReason">Flag reason (required if outcome is &quot;flagged&quot;)</Label>
               <Textarea id="flagReason" name="flagReason" rows={3} defaultValue={defaultValues.flagReason ?? ""} />
+              {fieldError("flagReason") && (
+                <p className="text-xs text-destructive" role="alert">
+                  {fieldError("flagReason")}
+                </p>
+              )}
             </div>
           </div>
 
-          <Button type="submit">{submitLabel}</Button>
+          {state?.message && !state.field && (
+            <p className="text-sm text-destructive" role="alert">
+              {state.message}
+            </p>
+          )}
+
+          <Button type="submit" disabled={pending}>
+            {pending ? "Submitting…" : submitLabel}
+          </Button>
           <p className="text-xs text-muted-foreground">{helperText}</p>
         </form>
       </CardContent>
