@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { CheckIcon, XIcon } from "lucide-react";
-import { EntryForm, toDatetimeLocal } from "../../entry-form";
+import { toDatetimeLocal } from "@/lib/verification/format-datetime";
+import { EntryForm } from "../../entry-form";
 import { decideSubmission, resubmitVerificationEntry } from "../actions";
 import { ActionToast } from "@/components/action-toast";
 

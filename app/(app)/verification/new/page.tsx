@@ -5,7 +5,8 @@ import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
 import { findToolByDomain } from "@/lib/tools/match-domain";
 import { getEligibleNextReviewers } from "@/lib/verification/review-chain";
-import { EntryForm, toDatetimeLocal } from "../entry-form";
+import { toDatetimeLocal } from "@/lib/verification/format-datetime";
+import { EntryForm } from "../entry-form";
 import { submitVerificationEntry } from "../actions";
 
 // Deliberately says nothing about compliance, pass/fail, or "escalation" — those aren't concepts

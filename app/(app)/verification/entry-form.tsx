@@ -12,11 +12,6 @@ import { CHECKLIST_ITEMS, type ChecklistItemsReviewed } from "@/lib/verification
 import { taskCategoryValues, verificationOutcomeValues, reviewerRoleValues } from "@/lib/validation/schemas";
 import type { EntryFormState } from "./entry-helpers";
 
-export function toDatetimeLocal(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 type EntryFormDefaultValues = {
   practitionerId?: string;
   reviewerRole?: string;
