@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/training", label: "Training" },
   { href: "/tools", label: "AI Tools" },
   { href: "/verification", label: "Verification Log" },
+  { href: "/settings/members", label: "Members" },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
