@@ -35,6 +35,7 @@ export default async function PendingSubmissionDetailPage(props: PageProps<"/ver
   const ctx = await requireFirmContext();
   const db = getDb();
   const assignees = alias(schema.users, "assignees");
+  const submitters = alias(schema.users, "submitters");
 
   const [submission] = await db
     .select({
@@ -65,11 +66,14 @@ export default async function PendingSubmissionDetailPage(props: PageProps<"/ver
       verificationLogId: schema.verificationSubmissions.verificationLogId,
       toolName: schema.aiToolRegister.toolName,
       practitionerName: schema.users.fullName,
+      submittedByName: submitters.fullName,
+      submittedByEmail: submitters.email,
     })
     .from(schema.verificationSubmissions)
     .innerJoin(schema.aiToolRegister, eq(schema.verificationSubmissions.aiToolId, schema.aiToolRegister.id))
     .innerJoin(schema.users, eq(schema.verificationSubmissions.practitionerId, schema.users.id))
     .innerJoin(assignees, eq(schema.verificationSubmissions.currentAssigneeId, assignees.id))
+    .innerJoin(submitters, eq(schema.verificationSubmissions.submittedBy, submitters.id))
     .where(and(eq(schema.verificationSubmissions.id, id), eq(schema.verificationSubmissions.firmId, ctx.firmId)))
     .limit(1);
 
@@ -146,6 +150,7 @@ export default async function PendingSubmissionDetailPage(props: PageProps<"/ver
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <Row label="Practitioner" value={submission.practitionerName ?? "—"} />
+          <Row label="Submitted by" value={submission.submittedByName ?? submission.submittedByEmail} />
           {submission.clientReference && <Row label="Client / engagement" value={submission.clientReference} />}
           <Row label="AI tool" value={submission.toolName} />
           <Row label="Task category" value={submission.taskCategory.replace(/_/g, " ")} />

@@ -18,6 +18,7 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
   const ctx = await requireFirmContext();
   const db = getDb();
   const approvers = alias(schema.users, "approvers");
+  const creators = alias(schema.users, "creators");
 
   const [entry] = await db
     .select({
@@ -42,11 +43,13 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
       toolName: schema.aiToolRegister.toolName,
       practitionerName: schema.users.fullName,
       approvedByName: approvers.fullName,
+      createdByName: creators.fullName,
     })
     .from(schema.verificationLog)
     .innerJoin(schema.aiToolRegister, eq(schema.verificationLog.aiToolId, schema.aiToolRegister.id))
     .innerJoin(schema.users, eq(schema.verificationLog.practitionerId, schema.users.id))
     .leftJoin(approvers, eq(schema.verificationLog.approvedBy, approvers.id))
+    .innerJoin(creators, eq(schema.verificationLog.createdBy, creators.id))
     .where(and(eq(schema.verificationLog.id, id), eq(schema.verificationLog.firmId, ctx.firmId)))
     .limit(1);
 
@@ -86,6 +89,7 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <Row label="Practitioner" value={entry.practitionerName ?? "—"} />
+          <Row label="Submitted by" value={entry.createdByName ?? "—"} />
           {entry.clientReference && <Row label="Client / engagement" value={entry.clientReference} />}
           <Row label="AI tool" value={entry.toolName} />
           <Row label="Task category" value={entry.taskCategory.replace(/_/g, " ")} />
