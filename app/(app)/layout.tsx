@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { UserButton, OrganizationSwitcher } from "@clerk/nextjs";
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
@@ -18,6 +19,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Resolves the Clerk session to a firm-scoped context. If the user has no
   // active organization, this redirects to /settings/organization.
   const ctx = await requireFirmContext();
+
+  if (!ctx.fullName) {
+    redirect("/welcome");
+  }
 
   const db = getDb();
   // Published policy with no acknowledgment row for this user — left join + isNull rather than

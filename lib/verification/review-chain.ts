@@ -5,14 +5,15 @@ import type { getPoolDb } from "@/lib/db/pool";
 export type EligibleReviewer = { id: string; fullName: string | null; email: string; reviewLevel: number };
 
 /**
- * Who a submission can go to next: the nearest review level *above* fromLevel that has at least
- * one active, eligible user — not a hardcoded "+1", so gaps in a firm's level numbering (e.g.
- * levels 1, 2, 4 with nobody at 3) still resolve correctly. excludeUserIds should always include
- * the submitter and the named practitioner, so someone who'd be rejected by the independence
- * check can never even be offered as an option. Empty result means fromLevel is already the
- * firm's top (or nobody eligible exists at any higher level — see the plan's "edge case to flag,
- * not solve"). Accepts either driver (see lib/db/pool.ts) — callers doing a real transaction
- * (decideSubmission) need the pool driver, plain reads elsewhere use getDb()'s HTTP driver.
+ * Who a submission can go to next: every active user at any review level *above* fromLevel —
+ * the submitter picks whoever they want from this set, not just the nearest tier (e.g. a level-1
+ * submitter can send straight to a level-4 partner, skipping 2 and 3). excludeUserIds should
+ * always include the submitter and the named practitioner, so someone who'd be rejected by the
+ * independence check can never even be offered as an option. Empty result means fromLevel is
+ * already the firm's top (or nobody eligible exists at any higher level — see the plan's "edge
+ * case to flag, not solve"). Accepts either driver (see lib/db/pool.ts) — callers doing a real
+ * transaction (decideSubmission) need the pool driver, plain reads elsewhere use getDb()'s HTTP
+ * driver.
  */
 export async function getEligibleNextReviewers(
   db: Db | ReturnType<typeof getPoolDb>,
@@ -20,7 +21,7 @@ export async function getEligibleNextReviewers(
   fromLevel: number,
   excludeUserIds: string[]
 ): Promise<EligibleReviewer[]> {
-  const candidates = await db
+  return db
     .select({
       id: schema.users.id,
       fullName: schema.users.fullName,
@@ -35,10 +36,6 @@ export async function getEligibleNextReviewers(
         gt(schema.users.reviewLevel, fromLevel),
         excludeUserIds.length > 0 ? notInArray(schema.users.id, excludeUserIds) : undefined
       )
-    );
-
-  if (candidates.length === 0) return [];
-
-  const nextLevel = Math.min(...candidates.map((c) => c.reviewLevel));
-  return candidates.filter((c) => c.reviewLevel === nextLevel);
+    )
+    .orderBy(schema.users.reviewLevel);
 }

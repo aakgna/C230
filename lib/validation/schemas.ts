@@ -117,6 +117,10 @@ export const decideSubmissionSchema = z
 
 export const appRoleValues = ["firm_admin", "practitioner"] as const;
 
+export const updateOwnProfileSchema = z.object({
+  fullName: z.string().trim().min(1, "Enter your name").max(200),
+});
+
 export const updateMemberSchema = z.object({
   userId: z.uuid(),
   appRole: z.enum(appRoleValues),

@@ -226,7 +226,8 @@ export function EntryForm({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Next in the review chain. They&apos;ll see this in their &quot;Needs your review&quot; list.
+                Anyone at a higher review level — not necessarily the next tier up. They&apos;ll see this in their
+                &quot;Needs your review&quot; list.
               </p>
             </div>
           )}
