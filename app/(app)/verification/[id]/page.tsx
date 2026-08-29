@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
@@ -11,6 +11,12 @@ import { Separator } from "@/components/ui/separator";
 import { CheckIcon, XIcon } from "lucide-react";
 import { ActionToast } from "@/components/action-toast";
 import { cn } from "@/lib/utils";
+
+const REVIEW_ACTION_LABEL: Record<string, string> = {
+  forwarded: "Forwarded",
+  approved: "Approved",
+  rejected: "Rejected",
+};
 
 export default async function VerificationEntryDetailPage(props: PageProps<"/verification/[id]">) {
   const { id } = await props.params;
@@ -40,6 +46,7 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
       reviewerRole: schema.verificationLog.reviewerRole,
       amendsEntryId: schema.verificationLog.amendsEntryId,
       approvedAt: schema.verificationLog.approvedAt,
+      submissionId: schema.verificationLog.submissionId,
       toolName: schema.aiToolRegister.toolName,
       practitionerName: schema.users.fullName,
       approvedByName: approvers.fullName,
@@ -56,6 +63,25 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
   if (!entry) {
     notFound();
   }
+
+  // Predates the review workflow (e.g. seeded directly) if there's no linked submission —
+  // nothing to show in that case, not even an empty card.
+  const reviewSteps = entry.submissionId
+    ? await db
+        .select({
+          id: schema.verificationSubmissionReviews.id,
+          reviewerLevel: schema.verificationSubmissionReviews.reviewerLevel,
+          action: schema.verificationSubmissionReviews.action,
+          notes: schema.verificationSubmissionReviews.notes,
+          createdAt: schema.verificationSubmissionReviews.createdAt,
+          reviewerName: schema.users.fullName,
+          reviewerEmail: schema.users.email,
+        })
+        .from(schema.verificationSubmissionReviews)
+        .innerJoin(schema.users, eq(schema.verificationSubmissionReviews.reviewerId, schema.users.id))
+        .where(eq(schema.verificationSubmissionReviews.submissionId, entry.submissionId))
+        .orderBy(asc(schema.verificationSubmissionReviews.createdAt))
+    : [];
 
   const chainResult = await verifyChain(ctx.firmId);
   const checklist = entry.checklistItemsReviewed as ChecklistItemsReviewed;
@@ -155,6 +181,28 @@ export default async function VerificationEntryDetailPage(props: PageProps<"/ver
           </p>
         </CardContent>
       </Card>
+
+      {reviewSteps.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Review chain</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {reviewSteps.map((step) => (
+              <div key={step.id} className="space-y-0.5 border-b pb-3 last:border-b-0 last:pb-0">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">
+                    {REVIEW_ACTION_LABEL[step.action] ?? step.action} by {step.reviewerName ?? step.reviewerEmail}
+                    <span className="ml-1.5 font-normal text-muted-foreground">(Level {step.reviewerLevel})</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">{step.createdAt.toLocaleString()}</span>
+                </div>
+                {step.notes && <p className="text-muted-foreground">{step.notes}</p>}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
