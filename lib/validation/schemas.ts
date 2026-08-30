@@ -54,10 +54,21 @@ const isoDatetimeLocal = z
     return date;
   });
 
+// Sentinel picked when the firm has no registered tool matching what the browser extension
+// detected (or the user just doesn't see their tool in the list) — paired with otherToolName
+// below. Never a real aiToolRegister id, so it can't collide with one.
+export const OTHER_TOOL_VALUE = "__other__";
+
 export const createVerificationEntrySchema = z
   .object({
     practitionerId: z.uuid(),
-    aiToolId: z.uuid(),
+    aiToolId: z.union([z.uuid(), z.literal(OTHER_TOOL_VALUE)]),
+    // Required only when aiToolId is the "other" sentinel — enforced below, not here, since a
+    // plain .optional() can't express "conditionally required."
+    otherToolName: z.string().trim().max(200).optional(),
+    // The extension's detected domain, carried through as a hidden field (not user-editable) so
+    // that resolving "Other" into a real tool can seed its domains list for future auto-match.
+    detectedDomain: z.string().trim().max(253).optional(),
     taskCategory: z.enum(taskCategoryValues),
     clientReference: z.string().trim().max(300).optional(),
     evidenceLocation: z.string().trim().max(2000).optional(),
@@ -80,6 +91,10 @@ export const createVerificationEntrySchema = z
     reviewCompletedAt: isoDatetimeLocal,
     deliveredToClientAt: isoDatetimeLocal.optional(),
     reviewerRole: z.enum(reviewerRoleValues),
+  })
+  .refine((data) => data.aiToolId !== OTHER_TOOL_VALUE || !!data.otherToolName, {
+    message: "Enter the name of the AI tool used",
+    path: ["otherToolName"],
   })
   .refine((data) => data.outcome !== "flagged" || !!data.flagReason, {
     message: "Flag reason is required when outcome is 'flagged'",

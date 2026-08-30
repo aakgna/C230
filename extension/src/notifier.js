@@ -1,4 +1,4 @@
-import { matchDomain } from "./domains.js";
+import { matchDomain, getToolName } from "./domains.js";
 import {
   getAppBaseUrl,
   getSnoozeUntil,
@@ -76,6 +76,11 @@ async function openVerificationForm() {
   if (domain) url.searchParams.set("domain", domain);
   if (evidenceUrl) url.searchParams.set("evidenceUrl", evidenceUrl);
   if (closedAt) url.searchParams.set("leftAt", new Date(closedAt).toISOString());
+  // Lets the form auto-select the matching tool by name when the firm has registered it but
+  // hasn't filled in its domains yet, and pre-fills "Other (specify)" with this name otherwise
+  // instead of leaving the picker blank — see app/(app)/verification/new/page.tsx.
+  const toolName = domain ? getToolName(domain) : null;
+  if (toolName) url.searchParams.set("toolName", toolName);
 
   await chrome.tabs.create({ url: url.toString() });
 }

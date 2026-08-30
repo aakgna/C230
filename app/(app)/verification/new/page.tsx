@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireFirmContext } from "@/lib/auth/firm-context";
 import { findToolByDomain } from "@/lib/tools/match-domain";
+import { OTHER_TOOL_VALUE } from "@/lib/validation/schemas";
 import { getEligibleNextReviewers } from "@/lib/verification/review-chain";
 import { toDatetimeLocal } from "@/lib/verification/format-datetime";
 import { EntryForm } from "../entry-form";
@@ -34,6 +35,17 @@ export default async function NewVerificationEntryPage(props: PageProps<"/verifi
   // watched AI site — lets the tool selection auto-fill instead of requiring a manual pick.
   const domainParam = typeof searchParams.domain === "string" ? searchParams.domain.toLowerCase() : undefined;
   const matchedTool = domainParam ? findToolByDomain(domainParam, tools) : undefined;
+  // Falls back to matching the extension's friendly tool name (e.g. "Claude") against this
+  // firm's registered tool names — catches the case where the tool is registered but nobody's
+  // filled in its domains yet, without needing that data-entry step done first. If neither
+  // matches, the form defaults to "Other (specify)" with this name pre-filled instead of leaving
+  // the picker blank — see entry-form.tsx and entry-helpers.ts's verifyPractitionerAndTool.
+  const toolNameParam = typeof searchParams.toolName === "string" ? searchParams.toolName : undefined;
+  const nameMatchedTool =
+    !matchedTool && toolNameParam
+      ? tools.find((t) => t.toolName.trim().toLowerCase() === toolNameParam.trim().toLowerCase())
+      : undefined;
+  const resolvedTool = matchedTool ?? nameMatchedTool;
   // The extension also captures the exact chat URL (not just the domain) when it detects the
   // user left a watched tab — prefills "evidence location" so nobody has to copy-paste it.
   const evidenceUrlParam = typeof searchParams.evidenceUrl === "string" ? searchParams.evidenceUrl : undefined;
@@ -43,7 +55,7 @@ export default async function NewVerificationEntryPage(props: PageProps<"/verifi
   const aiOutputGeneratedAtDefault =
     leftAtParam && !Number.isNaN(leftAtParam.getTime()) ? toDatetimeLocal(leftAtParam) : now;
 
-  const statusBanner = matchedTool ? STATUS_BANNER[matchedTool.status] : undefined;
+  const statusBanner = resolvedTool ? STATUS_BANNER[resolvedTool.status] : undefined;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -55,13 +67,13 @@ export default async function NewVerificationEntryPage(props: PageProps<"/verifi
         </p>
       </div>
 
-      {statusBanner && matchedTool && (
+      {statusBanner && resolvedTool && (
         <div className="flex items-start gap-2 rounded-md border bg-muted/50 px-4 py-3 text-sm">
           <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <span className="text-muted-foreground">
-            {matchedTool.toolName} {statusBanner.text}
+            {resolvedTool.toolName} {statusBanner.text}
           </span>
-          <Link href={`/tools/${matchedTool.id}`} className="ml-auto shrink-0 underline underline-offset-4">
+          <Link href={`/tools/${resolvedTool.id}`} className="ml-auto shrink-0 underline underline-offset-4">
             View register entry
           </Link>
         </div>
@@ -74,7 +86,9 @@ export default async function NewVerificationEntryPage(props: PageProps<"/verifi
         eligibleReviewers={eligibleReviewers}
         defaultValues={{
           practitionerId: ctx.userId,
-          aiToolId: matchedTool?.id,
+          aiToolId: resolvedTool?.id ?? (toolNameParam ? OTHER_TOOL_VALUE : undefined),
+          otherToolName: resolvedTool ? undefined : toolNameParam,
+          detectedDomain: domainParam,
           evidenceLocation: evidenceUrlParam,
           aiOutputGeneratedAt: aiOutputGeneratedAtDefault,
           reviewCompletedAt: now,

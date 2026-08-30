@@ -20,7 +20,14 @@
     "*://*.claude.ai/*",
     "*://*.gemini.google.com/*",
     "*://*.copilot.microsoft.com/*",
-    "*://*.perplexity.ai/*"
+    "*://*.perplexity.ai/*",
+    "*://*.grok.com/*",
+    "*://*.poe.com/*",
+    "*://*.you.com/*",
+    "*://*.chat.mistral.ai/*",
+    "*://*.chat.deepseek.com/*",
+    "*://*.meta.ai/*",
+    "*://*.character.ai/*"
   ],
   "optional_host_permissions": ["<all_urls>"],
   "icons": {

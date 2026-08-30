@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CHECKLIST_ITEMS, type ChecklistItemsReviewed } from "@/lib/verification/checklist-definitions";
-import { taskCategoryValues, verificationOutcomeValues, reviewerRoleValues } from "@/lib/validation/schemas";
+import {
+  taskCategoryValues,
+  verificationOutcomeValues,
+  reviewerRoleValues,
+  OTHER_TOOL_VALUE,
+} from "@/lib/validation/schemas";
 import type { EntryFormState } from "./entry-helpers";
 
 type EntryFormDefaultValues = {
@@ -17,6 +22,8 @@ type EntryFormDefaultValues = {
   reviewerRole?: string;
   clientReference?: string;
   aiToolId?: string;
+  otherToolName?: string;
+  detectedDomain?: string;
   taskCategory?: string;
   evidenceLocation?: string;
   documentReference?: string;
@@ -58,6 +65,7 @@ export function EntryForm({
 }) {
   const checklist = defaultValues.checklistItemsReviewed;
   const [state, formAction, pending] = useActionState(action, null);
+  const [aiToolValue, setAiToolValue] = useState(defaultValues.aiToolId ?? "");
   // Renders right under the specific input that caused it, not just as a banner at the bottom —
   // with ~15 fields on this form, "Delivery must be at or after review completion" is much more
   // useful sitting next to "Delivered to client at" than floating disconnected near the button.
@@ -162,17 +170,21 @@ export function EntryForm({
               <Select
                 name="aiToolId"
                 required
-                defaultValue={defaultValues.aiToolId}
-                items={tools.map((tool) => ({
-                  value: tool.id,
-                  label: `${tool.toolName}${
-                    tool.status === "prohibited"
-                      ? " (prohibited — do not use)"
-                      : tool.status === "under_review"
-                        ? " (under review)"
-                        : ""
-                  }`,
-                }))}
+                value={aiToolValue}
+                onValueChange={(value) => setAiToolValue(value as string)}
+                items={[
+                  ...tools.map((tool) => ({
+                    value: tool.id,
+                    label: `${tool.toolName}${
+                      tool.status === "prohibited"
+                        ? " (prohibited — do not use)"
+                        : tool.status === "under_review"
+                          ? " (under review)"
+                          : ""
+                    }`,
+                  })),
+                  { value: OTHER_TOOL_VALUE, label: "Other (specify)" },
+                ]}
               >
                 <SelectTrigger id="aiToolId" className="w-full">
                   <SelectValue placeholder="Select tool" />
@@ -185,8 +197,34 @@ export function EntryForm({
                       {tool.status === "under_review" ? " (under review)" : ""}
                     </SelectItem>
                   ))}
+                  <SelectItem value={OTHER_TOOL_VALUE}>Other (specify)</SelectItem>
                 </SelectContent>
               </Select>
+              {aiToolValue === OTHER_TOOL_VALUE && (
+                <>
+                  <Input
+                    name="otherToolName"
+                    required
+                    maxLength={200}
+                    defaultValue={defaultValues.otherToolName ?? ""}
+                    placeholder="Name of the AI tool"
+                    aria-label="Name of the AI tool"
+                    className="mt-1.5"
+                  />
+                  {fieldError("otherToolName") && (
+                    <p className="text-xs text-destructive" role="alert">
+                      {fieldError("otherToolName")}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Not in your firm&apos;s register yet — this adds it as a new tool marked &quot;under review&quot;
+                    for an admin to formally vet.
+                  </p>
+                </>
+              )}
+              {defaultValues.detectedDomain && (
+                <input type="hidden" name="detectedDomain" value={defaultValues.detectedDomain} />
+              )}
             </div>
 
             <div className="space-y-1.5">

@@ -28,9 +28,18 @@ export async function submitVerificationEntry(
   const db = getDb();
 
   let parsed;
+  let resolvedAiToolId: string;
   try {
     parsed = parseVerificationEntryFormData(formData);
-    await verifyPractitionerAndTool(db, ctx.firmId, parsed.practitionerId, parsed.aiToolId);
+    resolvedAiToolId = await verifyPractitionerAndTool(
+      db,
+      ctx.firmId,
+      ctx.userId,
+      parsed.practitionerId,
+      parsed.aiToolId,
+      parsed.otherToolName,
+      parsed.detectedDomain
+    );
   } catch (error) {
     return toActionErrorState(error);
   }
@@ -57,7 +66,7 @@ export async function submitVerificationEntry(
     .values({
       firmId: ctx.firmId,
       practitionerId: parsed.practitionerId,
-      aiToolId: parsed.aiToolId,
+      aiToolId: resolvedAiToolId,
       taskCategory: parsed.taskCategory,
       clientReference: parsed.clientReference ?? null,
       checklistItemsReviewed: parsed.checklistItemsReviewed,

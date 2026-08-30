@@ -8,7 +8,7 @@ for the design rationale.
 
 1. `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select this `extension/` folder.
 2. On first install it opens the options page — enter the app's base URL (e.g. `http://localhost:3000` for local dev), then click Save. A one-time Chrome permission prompt appears (grants the extension access to that origin, needed for usage-event capture below) — accept it. You must already be logged in to that app in the same browser profile.
-3. Open a watched site (`chatgpt.com`, `claude.ai`, `gemini.google.com`, `copilot.microsoft.com`, `perplexity.ai`), then close the tab or navigate away. A reminder notification should appear within about a minute.
+3. Open a watched site (see `src/domains.js` for the full list — `chatgpt.com`, `claude.ai`, `gemini.google.com`, `copilot.microsoft.com`, `perplexity.ai`, `grok.com`, `poe.com`, `you.com`, `chat.mistral.ai`, `chat.deepseek.com`, `meta.ai`, `character.ai`), then close the tab or navigate away. A reminder notification should appear within about a minute.
 
 ## Usage-event capture
 

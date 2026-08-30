@@ -1,9 +1,9 @@
 import "server-only";
 import { ZodError } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ilike } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { CHECKLIST_ITEMS, type ChecklistItemsReviewed } from "@/lib/verification/checklist-definitions";
-import { createVerificationEntrySchema } from "@/lib/validation/schemas";
+import { createVerificationEntrySchema, OTHER_TOOL_VALUE } from "@/lib/validation/schemas";
 
 // Passed to useActionState in entry-form.tsx (a Client Component, hence type-only import there —
 // the "server-only" guard above only fires on a runtime import, so the type erases cleanly).
@@ -49,6 +49,8 @@ export function parseVerificationEntryFormData(formData: FormData) {
   return createVerificationEntrySchema.parse({
     practitionerId: formData.get("practitionerId"),
     aiToolId: formData.get("aiToolId"),
+    otherToolName: formData.get("otherToolName") || undefined,
+    detectedDomain: formData.get("detectedDomain") || undefined,
     taskCategory: formData.get("taskCategory"),
     clientReference: formData.get("clientReference") || undefined,
     checklistItemsReviewed,
@@ -67,15 +69,20 @@ export function parseVerificationEntryFormData(formData: FormData) {
 
 /**
  * The practitioner/tool dropdowns are rendered from this firm's own data, but a client could
- * still tamper with the submitted ids — re-check both actually belong to this firm before
- * writing a submission. Shared by submit and resubmit.
+ * still tamper with the submitted ids — re-check the practitioner actually belongs to this firm,
+ * and resolve aiToolId to a real, firm-owned aiToolRegister id before writing a submission.
+ * Shared by submit and resubmit. Returns the resolved tool id, since the OTHER_TOOL_VALUE
+ * sentinel case creates (or reuses) a real row rather than referencing one that already exists.
  */
 export async function verifyPractitionerAndTool(
   db: ReturnType<typeof getDb>,
   firmId: string,
+  userId: string,
   practitionerId: string,
-  aiToolId: string
-) {
+  aiToolId: string,
+  otherToolName: string | undefined,
+  detectedDomain: string | undefined
+): Promise<string> {
   const [practitioner] = await db
     .select({ id: schema.users.id })
     .from(schema.users)
@@ -85,12 +92,44 @@ export async function verifyPractitionerAndTool(
     throw new Error("Practitioner not found for this firm");
   }
 
-  const [tool] = await db
+  if (aiToolId !== OTHER_TOOL_VALUE) {
+    const [tool] = await db
+      .select({ id: schema.aiToolRegister.id })
+      .from(schema.aiToolRegister)
+      .where(and(eq(schema.aiToolRegister.id, aiToolId), eq(schema.aiToolRegister.firmId, firmId)))
+      .limit(1);
+    if (!tool) {
+      throw new Error("Tool not found for this firm");
+    }
+    return tool.id;
+  }
+
+  // "Other, specify": otherToolName is guaranteed present by createVerificationEntrySchema's
+  // refine. Reuse an existing tool of the same name (case-insensitive) instead of creating a
+  // duplicate on every subsequent "Other: Claude" submission — same firm-scoped, under_review
+  // entry point as addCustomTool() in app/(app)/tools/actions.ts, just triggered from this form
+  // instead of the tools-register page. Seeding domains from the extension's detected domain
+  // means the *next* time this same site is used, it auto-matches instead of falling into
+  // "Other" again.
+  const name = otherToolName!.trim();
+  const [existing] = await db
     .select({ id: schema.aiToolRegister.id })
     .from(schema.aiToolRegister)
-    .where(and(eq(schema.aiToolRegister.id, aiToolId), eq(schema.aiToolRegister.firmId, firmId)))
+    .where(and(eq(schema.aiToolRegister.firmId, firmId), ilike(schema.aiToolRegister.toolName, name)))
     .limit(1);
-  if (!tool) {
-    throw new Error("Tool not found for this firm");
+  if (existing) {
+    return existing.id;
   }
+
+  const [created] = await db
+    .insert(schema.aiToolRegister)
+    .values({
+      firmId,
+      toolName: name,
+      status: "under_review",
+      domains: detectedDomain ? [detectedDomain] : [],
+      updatedBy: userId,
+    })
+    .returning({ id: schema.aiToolRegister.id });
+  return created.id;
 }
